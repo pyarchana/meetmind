@@ -147,7 +147,7 @@ meetmind/
 ### Setup
 
 ```bash
-git clone https://github.com/areychana/meetmind.git
+git clone https://github.com/pyarchana/meetmind.git
 cd meetmind/app
 
 python -m venv .venv
@@ -197,4 +197,4 @@ MIT
 
 ---
 
-Built for the Gemini Live Agent Hackathon by [areychana](https://github.com/areychana), 2026.
+Built for the Gemini Live Agent Hackathon by [pyarchana](https://github.com/pyarchana), 2026.
