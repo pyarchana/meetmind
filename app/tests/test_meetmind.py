@@ -223,7 +223,7 @@ class TestUpstreamTask:
 # core/pipeline.py: downstream_task
 # ---------------------------------------------------------------------------
 
-def _event(agent_text=None, user_text=None, audio=None,
+def _event(agent_text=None, user_text=None, audio=None, state_delta=None,
            turn_complete=False, interrupted=False):
     """Minimal stand-in for one ADK live event."""
     content = None
@@ -238,6 +238,7 @@ def _event(agent_text=None, user_text=None, audio=None,
         content=content,
         input_transcription=types.Transcription(text=user_text) if user_text else None,
         output_transcription=types.Transcription(text=agent_text) if agent_text else None,
+        actions=SimpleNamespace(state_delta=state_delta),
         turn_complete=turn_complete,
         interrupted=interrupted,
     )
@@ -321,6 +322,127 @@ class TestDownstreamTask:
             _event(agent_text="Short."),
         ])
         assert "Short." in _agent_lines(frames)
+
+    @pytest.mark.asyncio
+    async def test_meeting_state_reaches_the_browser(self):
+        delta = {"decisions": [{"id": 1, "text": "ship on friday"}]}
+        frames = await _browser_sees([_event(state_delta=delta)])
+        assert frames == [{"type": "meeting_state", "data": delta}]
+
+    @pytest.mark.asyncio
+    async def test_events_without_state_changes_send_nothing(self):
+        frames = await _browser_sees([_event(state_delta={})])
+        assert not [f for f in frames if f["type"] == "meeting_state"]
+
+
+# ---------------------------------------------------------------------------
+# meetmind_agent/meeting.py
+# ---------------------------------------------------------------------------
+
+class _RecordingState(dict):
+    """Dict that remembers assignments, the way ADK records state deltas."""
+
+    def __init__(self):
+        super().__init__()
+        self.assigned = []
+
+    def __setitem__(self, key, value):
+        self.assigned.append(key)
+        super().__setitem__(key, value)
+
+
+def _tool_context():
+    return SimpleNamespace(state=_RecordingState())
+
+
+class TestMeetingTools:
+    def test_decisions_get_sequential_ids(self):
+        from meetmind_agent.meeting import record_decision
+
+        context = _tool_context()
+        record_decision("ship on friday", context)
+        record_decision("drop the sso work", context)
+
+        decisions = context.state["decisions"]
+        assert [d["id"] for d in decisions] == [1, 2]
+        assert [d["text"] for d in decisions] == ["ship on friday", "drop the sso work"]
+
+    def test_action_item_records_owner_and_starts_open(self):
+        from meetmind_agent.meeting import record_action_item
+
+        context = _tool_context()
+        result = record_action_item("write the migration", "priya", context)
+
+        assert result["status"] == "recorded"
+        assert result["action"]["owner"] == "priya"
+        assert result["action"]["done"] is False
+
+    def test_open_question_can_be_resolved(self):
+        from meetmind_agent.meeting import record_open_question, resolve_open_question
+
+        context = _tool_context()
+        recorded = record_open_question("what is the pricing tier?", context)
+        result = resolve_open_question(recorded["question"]["id"], "usage based", context)
+
+        assert result["status"] == "resolved"
+        assert context.state["questions"][0]["answered"] is True
+        assert context.state["questions"][0]["answer"] == "usage based"
+
+    def test_resolving_an_unknown_question_reports_not_found(self):
+        from meetmind_agent.meeting import resolve_open_question
+
+        result = resolve_open_question(99, "whatever", _tool_context())
+        assert result["status"] == "not_found"
+
+    def test_get_meeting_state_returns_every_bucket(self):
+        from meetmind_agent.meeting import (
+            get_meeting_state,
+            record_action_item,
+            record_decision,
+            record_open_question,
+        )
+
+        context = _tool_context()
+        record_decision("ship on friday", context)
+        record_action_item("write the migration", "priya", context)
+        record_open_question("what is the pricing tier?", context)
+
+        state = get_meeting_state(context)
+        assert len(state["decisions"]) == 1
+        assert len(state["actions"]) == 1
+        assert len(state["questions"]) == 1
+
+    def test_get_meeting_state_is_empty_before_anything_happens(self):
+        from meetmind_agent.meeting import get_meeting_state
+
+        assert get_meeting_state(_tool_context()) == {
+            "decisions": [], "questions": [], "actions": []
+        }
+
+    def test_writes_reassign_the_key_so_a_delta_is_recorded(self):
+        """
+        ADK only emits a state delta when a key is assigned. Mutating the
+        existing list in place would update the server and leave the browser
+        showing stale meeting state.
+        """
+        from meetmind_agent.meeting import record_decision, resolve_open_question
+        from meetmind_agent.meeting import record_open_question
+
+        context = _tool_context()
+        record_decision("ship on friday", context)
+        first_list = context.state["decisions"]
+
+        record_decision("drop the sso work", context)
+        assert context.state["decisions"] is not first_list, "list was mutated in place"
+
+        record_open_question("what is the pricing tier?", context)
+        questions_before = context.state["questions"]
+        resolve_open_question(1, "usage based", context)
+        assert context.state["questions"] is not questions_before, "list was mutated in place"
+
+        assert context.state.assigned == [
+            "decisions", "decisions", "questions", "questions"
+        ]
 
 
 # ---------------------------------------------------------------------------
