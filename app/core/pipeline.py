@@ -185,18 +185,35 @@ async def run_session_pipeline(
     session_id: str,
 ) -> None:
     """
-    Entry point for a full session. Creates the LiveRequestQueue,
-    ensures the session exists, then runs upstream and downstream
-    tasks concurrently until either completes or the client disconnects.
+    Entry point for a full session. Creates the LiveRequestQueue, ensures
+    the session exists, then runs both tasks until one of them finishes.
+
+    Whichever side ends first cancels the other. Waiting for both instead
+    leaves downstream parked on run_live() after the browser is gone,
+    holding the Gemini session open until the model happens to emit again.
     """
     await get_or_create_session(user_id, session_id)
     live_request_queue = LiveRequestQueue()
 
-    try:
-        await asyncio.gather(
+    tasks = [
+        asyncio.create_task(
             upstream_task(websocket, live_request_queue),
+            name="upstream",
+        ),
+        asyncio.create_task(
             downstream_task(websocket, live_request_queue, user_id, session_id),
-            return_exceptions=True,
-        )
+            name="downstream",
+        ),
+    ]
+
+    try:
+        done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        for task in done:
+            error = task.exception()
+            if error:
+                logger.error("[%s] failed: %s", task.get_name(), error)
     finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
         live_request_queue.close()
