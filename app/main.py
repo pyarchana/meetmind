@@ -13,9 +13,13 @@ from fastapi import FastAPI, WebSocket
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from core.config import GOOGLE_API_KEY
 from core.pipeline import run_session_pipeline
 
 logging.basicConfig(level=logging.INFO)
+
+if not GOOGLE_API_KEY:
+    raise RuntimeError("GOOGLE_API_KEY is not set. Copy .env.example to .env and add your key.")
 
 app = FastAPI(title="MeetMind", version="1.0.0")
 app.mount("/static", StaticFiles(directory="static"), name="static")
