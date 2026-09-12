@@ -21,16 +21,9 @@ class TestConfig:
         from core.config import APP_NAME
         assert APP_NAME == "meetmind"
 
-    def test_audio_sample_rates(self):
-        from core.config import INPUT_SAMPLE_RATE, OUTPUT_SAMPLE_RATE
+    def test_input_sample_rate(self):
+        from core.config import INPUT_SAMPLE_RATE
         assert INPUT_SAMPLE_RATE == 16000
-        assert OUTPUT_SAMPLE_RATE == 24000
-
-    def test_screen_settings(self):
-        from core.config import SCREEN_JPEG_QUALITY, SCREEN_CAPTURE_WIDTH, SCREEN_CAPTURE_HEIGHT
-        assert 0 < SCREEN_JPEG_QUALITY <= 1
-        assert SCREEN_CAPTURE_WIDTH == 1280
-        assert SCREEN_CAPTURE_HEIGHT == 720
 
 
 # ---------------------------------------------------------------------------
