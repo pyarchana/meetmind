@@ -117,11 +117,13 @@ async def downstream_task(
         output_transcription - agent speech transcript (longest chunk wins)
 
     Deduplication strategy:
-        Gemini streams transcriptions incrementally. Each chunk is longer
-        than the previous as words are added. We track the last sent
-        transcript length and only forward when the new text is longer,
-        ensuring the browser always shows the most complete version without
-        displaying duplicate or partial repeats.
+        Gemini streams transcriptions incrementally, each chunk longer than
+        the last as words are added, so within a turn we forward only when
+        the new text is longer than what we already sent.
+
+        Both buffers reset on a turn boundary. Without that, a short answer
+        following a long one never reaches the browser, because it loses the
+        length comparison against the previous turn.
     """
     last_agent_transcript = ""
     last_user_transcript = ""
@@ -154,7 +156,6 @@ async def downstream_task(
                 txt = (getattr(input_t, "text", "") or "").strip()
                 if txt and len(txt) > len(last_user_transcript):
                     last_user_transcript = txt
-                    last_agent_transcript = ""  # new user turn resets agent buffer
                     await websocket.send_text(
                         json.dumps({"type": "transcript_user", "data": txt})
                     )
@@ -168,6 +169,11 @@ async def downstream_task(
                     await websocket.send_text(
                         json.dumps({"type": "transcript_agent", "data": txt})
                     )
+
+            if event.turn_complete or event.interrupted:
+                last_user_transcript = ""
+                last_agent_transcript = ""
+                await websocket.send_text(json.dumps({"type": "turn_complete"}))
 
     except Exception as e:
         logger.error(f"[downstream] error: {e}")
