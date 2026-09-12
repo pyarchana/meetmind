@@ -129,7 +129,6 @@ async def downstream_task(
                 if txt and len(txt) > len(last_user_transcript):
                     last_user_transcript = txt
                     last_agent_transcript = ""  # new user turn resets agent buffer
-                    logger.info(f"[USER] {txt}")
                     await websocket.send_text(
                         json.dumps({"type": "transcript_user", "data": txt})
                     )
@@ -140,7 +139,6 @@ async def downstream_task(
                 txt = (getattr(output_t, "text", "") or "").strip()
                 if txt and len(txt) > len(last_agent_transcript):
                     last_agent_transcript = txt
-                    logger.info(f"[AGENT] {txt}")
                     await websocket.send_text(
                         json.dumps({"type": "transcript_agent", "data": txt})
                     )
