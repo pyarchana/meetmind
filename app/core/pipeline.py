@@ -115,6 +115,12 @@ async def downstream_task(
         text parts           - text responses, forwarded as-is
         input_transcription  - user speech transcript (longest chunk wins)
         output_transcription - agent speech transcript (longest chunk wins)
+        state_delta          - meeting state the tools just changed
+
+    Meeting state:
+        The tools reassign a whole list at a time, so each delta carries the
+        complete value for every key it mentions. The browser can merge it
+        key by key without needing to replay earlier deltas.
 
     Deduplication strategy:
         Gemini streams transcriptions incrementally, each chunk longer than
@@ -169,6 +175,15 @@ async def downstream_task(
                     await websocket.send_text(
                         json.dumps({"type": "transcript_agent", "data": txt})
                     )
+
+            # Meeting state the tools changed on this event
+            if event.actions and event.actions.state_delta:
+                await websocket.send_text(
+                    json.dumps({
+                        "type": "meeting_state",
+                        "data": event.actions.state_delta,
+                    })
+                )
 
             if event.turn_complete or event.interrupted:
                 last_user_transcript = ""
