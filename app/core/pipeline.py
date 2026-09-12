@@ -22,6 +22,7 @@ from fastapi.websockets import WebSocketDisconnect
 from google.adk.agents.live_request_queue import LiveRequestQueue
 from google.genai import types
 
+from core.config import INPUT_SAMPLE_RATE
 from core.session import runner, build_run_config, get_or_create_session
 
 logger = logging.getLogger(__name__)
@@ -49,7 +50,7 @@ async def upstream_task(
             if msg_type == "audio":
                 audio_bytes = base64.b64decode(message["data"])
                 blob = types.Blob(
-                    mime_type="audio/pcm;rate=16000",
+                    mime_type=f"audio/pcm;rate={INPUT_SAMPLE_RATE}",
                     data=audio_bytes
                 )
                 live_request_queue.send_realtime(blob)

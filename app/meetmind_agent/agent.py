@@ -1,5 +1,6 @@
-import os
 from google.adk.agents import Agent
+
+from core.config import GEMINI_MODEL
 
 INSTRUCTION = """You are MeetMind, a private real-time AI co-pilot for work meetings.
 
@@ -17,6 +18,6 @@ CRITICAL RULES:
 
 agent = Agent(
     name="meetmind_agent",
-    model=os.getenv("MEETMIND_MODEL", "gemini-2.5-flash-native-audio-preview-09-2025"),
+    model=GEMINI_MODEL,
     instruction=INSTRUCTION,
 )
