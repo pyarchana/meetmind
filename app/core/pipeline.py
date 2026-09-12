@@ -28,6 +28,45 @@ from core.session import runner, build_run_config, get_or_create_session
 logger = logging.getLogger(__name__)
 
 
+def parse_client_message(raw: str) -> tuple[str, object]:
+    """
+    Turn a raw browser frame into something LiveRequestQueue accepts.
+
+    Returns ("realtime", Blob) for audio and screen frames, or
+    ("content", Content) for typed questions. Raises ValueError if the
+    frame cannot be forwarded.
+    """
+    try:
+        message = json.loads(raw)
+    except json.JSONDecodeError:
+        raise ValueError("not valid JSON") from None
+
+    if not isinstance(message, dict):
+        raise ValueError("expected a JSON object")
+
+    msg_type = message.get("type")
+    data = message.get("data")
+
+    if msg_type == "text":
+        if not isinstance(data, str) or not data.strip():
+            raise ValueError("text needs a non-empty data string")
+        return "content", types.Content(parts=[types.Part(text=data)])
+
+    if msg_type in ("audio", "screen"):
+        if not isinstance(data, str):
+            raise ValueError(f"{msg_type} needs a base64 data string")
+        try:
+            decoded = base64.b64decode(data, validate=True)
+        except ValueError:
+            raise ValueError(f"{msg_type} data is not valid base64") from None
+        mime_type = (
+            f"audio/pcm;rate={INPUT_SAMPLE_RATE}" if msg_type == "audio" else "image/jpeg"
+        )
+        return "realtime", types.Blob(mime_type=mime_type, data=decoded)
+
+    raise ValueError(f"unknown message type {msg_type!r}")
+
+
 async def upstream_task(
     websocket: WebSocket,
     live_request_queue: LiveRequestQueue,
@@ -36,43 +75,29 @@ async def upstream_task(
     Reads messages from the browser WebSocket and forwards them to
     Gemini Live via the LiveRequestQueue.
 
-    Message types handled:
-        audio  - raw PCM at 16kHz, base64 encoded
-        screen - JPEG frame, base64 encoded
-        text   - plain text question from the user
+    A frame we cannot parse is reported back to the client and skipped,
+    so one bad message does not take the connection down with it.
     """
     try:
         while True:
             raw = await websocket.receive_text()
-            message = json.loads(raw)
-            msg_type = message.get("type")
 
-            if msg_type == "audio":
-                audio_bytes = base64.b64decode(message["data"])
-                blob = types.Blob(
-                    mime_type=f"audio/pcm;rate={INPUT_SAMPLE_RATE}",
-                    data=audio_bytes
+            try:
+                kind, payload = parse_client_message(raw)
+            except ValueError as e:
+                logger.warning("[upstream] rejected frame: %s", e)
+                await websocket.send_text(
+                    json.dumps({"type": "error", "data": f"ignored message: {e}"})
                 )
-                live_request_queue.send_realtime(blob)
+                continue
 
-            elif msg_type == "screen":
-                image_bytes = base64.b64decode(message["data"])
-                blob = types.Blob(
-                    mime_type="image/jpeg",
-                    data=image_bytes
-                )
-                live_request_queue.send_realtime(blob)
-
-            elif msg_type == "text":
-                content = types.Content(
-                    parts=[types.Part(text=message["data"])]
-                )
-                live_request_queue.send_content(content)
+            if kind == "realtime":
+                live_request_queue.send_realtime(payload)
+            else:
+                live_request_queue.send_content(payload)
 
     except WebSocketDisconnect:
         logger.info("[upstream] client disconnected")
-    except Exception as e:
-        logger.error(f"[upstream] error: {e}")
 
 
 async def downstream_task(
