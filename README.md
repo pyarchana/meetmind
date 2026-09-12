@@ -98,7 +98,7 @@ https://meetmind-671715875630.us-central1.run.app
 |---|---|
 | Frontend | Vanilla JS, Web Audio API, Canvas |
 | Backend | Python, FastAPI, asyncio WebSockets |
-| AI | Google Gemini 2.0 Flash Live |
+| AI | Google Gemini 2.5 Flash Native Audio |
 | Agent SDK | Google ADK, LiveRequestQueue |
 | Audio In | PCM 16kHz, ScriptProcessorNode |
 | Audio Out | PCM 24kHz, AudioBufferSourceNode |
@@ -110,16 +110,20 @@ https://meetmind-671715875630.us-central1.run.app
 ```
 meetmind/
 ├── README.md
+├── deploy.sh                    # Cloud Run deployment
+├── architecture.png
 ├── screenshots/
 │
 └── app/
     ├── main.py                  # FastAPI entry point, route definitions
     ├── requirements.txt
     ├── Dockerfile
+    ├── .dockerignore
+    ├── .env.example
     ├── pytest.ini
     │
     ├── core/
-    │   ├── config.py            # env vars, audio and screen constants
+    │   ├── config.py            # env vars, model and audio settings
     │   ├── session.py           # ADK runner, session creation, RunConfig
     │   └── pipeline.py          # upstream_task, downstream_task
     │
