@@ -1,5 +1,5 @@
 """
-MeetMind — FastAPI application entry point.
+MeetMind: FastAPI application entry point.
 
 Routes:
     GET  /          serves the frontend (static/index.html)

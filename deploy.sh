@@ -1,5 +1,5 @@
 #!/bin/bash
-# deploy.sh — automated Cloud Run deployment for MeetMind
+# deploy.sh: automated Cloud Run deployment for MeetMind
 #
 # Usage:
 #   chmod +x deploy.sh

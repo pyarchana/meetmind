@@ -107,7 +107,7 @@
     .modal p { font-size: 0.88rem; color: rgba(245,240,232,0.55); line-height: 1.7; margin-bottom: 10px; }
     .modal ul { list-style: none; padding: 0; }
     .modal ul li { font-size: 0.85rem; color: rgba(245,240,232,0.55); line-height: 1.7; padding-left: 16px; position: relative; }
-    .modal ul li::before { content: '—'; position: absolute; left: 0; color: rgba(245,240,232,0.25); }
+    .modal ul li::before { content: '·'; position: absolute; left: 0; color: rgba(245,240,232,0.25); }
     .modal-close {
       display: block; margin-top: 24px; padding: 10px 20px;
       background: rgba(245,240,232,0.06); border: 1px solid rgba(245,240,232,0.12);
@@ -458,7 +458,7 @@ document.addEventListener('mouseup', function(){ document.body.classList.remove(
       o.x += o.vx; o.y += o.vy;
       ht[i] += 0.2;
       var h = (o.h + ht[i]) % 360;
-      // Cream/amber palette — hues around 35-55 (warm)
+      // Cream/amber palette, hues around 35-55 (warm)
       var warmH = 35 + (h % 25);
       var g = c.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r);
       g.addColorStop(0, 'hsla('+warmH+',40%,75%,'+o.a+')');
@@ -589,7 +589,7 @@ function toggleScreen(){
       .then(function(stream){
         var track=stream.getVideoTracks()[0], capture=new ImageCapture(track);
         screenBtn.className='btn screen-active';screenBtn.textContent='🖥 Sharing...';
-        addMsg('Screen sharing on — ask "what do you see?" to use it.','system');
+        addMsg('Screen sharing on. Ask "what do you see?" to use it.','system');
         screenInterval=setInterval(function(){
           if(!isConnected||!ws||ws.readyState!==WebSocket.OPEN) return;
           capture.grabFrame().then(function(bmp){
@@ -608,7 +608,7 @@ function toggleScreen(){
 function sendText(){
   var text=textInput.value.trim();
   if(!text) return;
-  if(!isConnected||!ws||ws.readyState!==WebSocket.OPEN){ addMsg('Not connected — start a session first.','error');return; }
+  if(!isConnected||!ws||ws.readyState!==WebSocket.OPEN){ addMsg('Not connected. Start a session first.','error');return; }
   curAgent=null; stopAudio(); removeThink();
   addMsg('✏️ '+text,'user');
   ws.send(JSON.stringify({type:'text',data:text}));

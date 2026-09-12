@@ -1,5 +1,5 @@
 """
-Async pipeline — two concurrent tasks bridging the browser WebSocket
+Async pipeline: two concurrent tasks bridging the browser WebSocket
 and the Gemini Live API via Google ADK's LiveRequestQueue.
 
 Architecture:
@@ -36,9 +36,9 @@ async def upstream_task(
     Gemini Live via the LiveRequestQueue.
 
     Message types handled:
-        audio  — raw PCM at 16kHz, base64 encoded
-        screen — JPEG frame, base64 encoded
-        text   — plain text question from the user
+        audio  - raw PCM at 16kHz, base64 encoded
+        screen - JPEG frame, base64 encoded
+        text   - plain text question from the user
     """
     try:
         while True:
@@ -85,10 +85,10 @@ async def downstream_task(
     the browser over the WebSocket.
 
     Events handled:
-        audio parts        — PCM at 24kHz, forwarded as base64
-        text parts         — text responses, forwarded as-is
-        input_transcription  — user speech transcript (longest chunk wins)
-        output_transcription — agent speech transcript (longest chunk wins)
+        audio parts          - PCM at 24kHz, forwarded as base64
+        text parts           - text responses, forwarded as-is
+        input_transcription  - user speech transcript (longest chunk wins)
+        output_transcription - agent speech transcript (longest chunk wins)
 
     Deduplication strategy:
         Gemini streams transcriptions incrementally. Each chunk is longer

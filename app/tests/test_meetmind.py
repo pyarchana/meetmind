@@ -83,7 +83,7 @@ class TestSession:
 
 
 # ---------------------------------------------------------------------------
-# core/pipeline.py — upstream_task
+# core/pipeline.py: upstream_task
 # ---------------------------------------------------------------------------
 
 class TestUpstreamTask:
@@ -168,13 +168,13 @@ class TestUpstreamTask:
 
 
 # ---------------------------------------------------------------------------
-# core/pipeline.py — transcript deduplication logic
+# core/pipeline.py: transcript deduplication logic
 # ---------------------------------------------------------------------------
 
 class TestTranscriptDeduplication:
     """
     Verifies the longest-chunk-wins deduplication strategy.
-    Gemini streams transcriptions incrementally — each event contains
+    Gemini streams transcriptions incrementally, each event contains
     a longer version of the same sentence as words are added.
     Only the longest seen so far should be forwarded to the browser.
     """

@@ -17,8 +17,8 @@ GEMINI_MODEL = os.getenv(
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 # Audio settings
-INPUT_SAMPLE_RATE = 16000   # Hz — browser captures at this rate
-OUTPUT_SAMPLE_RATE = 24000  # Hz — Gemini responds at this rate
+INPUT_SAMPLE_RATE = 16000   # Hz, browser captures at this rate
+OUTPUT_SAMPLE_RATE = 24000  # Hz, Gemini responds at this rate
 
 # Screen capture settings
 SCREEN_JPEG_QUALITY = 0.4
