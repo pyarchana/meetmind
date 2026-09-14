@@ -31,6 +31,35 @@ jobs:
         working-directory: ${{ github.workspace }}/bench
         run: pytest . -v
 
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      # app/static holds the built frontend so a clone can run uvicorn without
+      # node. That only works if the build stays in step with the source, so
+      # rebuild and fail if the committed output moved.
+      - name: Check the committed build is current
+        run: |
+          npm run build
+          git -C "$GITHUB_WORKSPACE" diff --exit-code -- app/static
+
   style:
     runs-on: ubuntu-latest
 
