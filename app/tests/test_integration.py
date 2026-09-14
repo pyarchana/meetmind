@@ -11,6 +11,7 @@ skipped unless a real key is in the environment.
 """
 
 import asyncio
+import base64
 import json
 import os
 from types import SimpleNamespace
@@ -90,9 +91,18 @@ class TestRoutes:
 
 
 class TestWebSocketRoute:
-    def test_a_typed_question_comes_back_answered(self, answering_client):
+    """
+    Every send here is followed by a read of its reply. Leaving a message in
+    flight when the `with` block closes the socket races the server teardown,
+    which passes locally and fails on a slower CI runner.
+
+    The stub emits its events on connect, independent of anything sent, so the
+    downstream cases do not send at all. Sending there would prove nothing and
+    reintroduce the race.
+    """
+
+    def test_model_events_reach_the_client(self, answering_client):
         with answering_client.websocket_connect("/ws/u1/s1") as socket:
-            socket.send_text(json.dumps({"type": "text", "data": "capital of france?"}))
             frames = [json.loads(socket.receive_text()) for _ in range(4)]
 
         by_type = {frame["type"]: frame for frame in frames}
@@ -101,40 +111,45 @@ class TestWebSocketRoute:
         assert by_type["meeting_state"]["data"]["decisions"][0]["text"] == "ship on friday"
         assert "turn_complete" in by_type
 
-    def test_audio_frames_are_accepted(self, answering_client):
-        import base64
-
-        with answering_client.websocket_connect("/ws/u2/s2") as socket:
+    def test_a_good_audio_frame_draws_no_complaint(self, quiet_client):
+        """
+        The valid frame is answered with silence, so a bad frame is sent behind
+        it. Messages are handled in order, so reaching the second error means
+        the first was accepted.
+        """
+        with quiet_client.websocket_connect("/ws/u2/s2") as socket:
             socket.send_text(json.dumps({
                 "type": "audio",
-                "data": base64.b64encode(b"\x00\x01" * 160).decode(),
+                "data": base64.b64encode(bytes([0, 1]) * 160).decode(),
             }))
-            first = json.loads(socket.receive_text())
+            socket.send_text(json.dumps({"type": "audio", "data": "!!!not base64!!!"}))
+            reply = json.loads(socket.receive_text())
 
-        assert first["type"] in {"transcript_agent", "audio", "meeting_state", "turn_complete"}
+        assert reply["type"] == "error"
+        assert "base64" in reply["data"]
 
-    def test_a_malformed_frame_is_reported_not_fatal(self, quiet_client):
+    def test_bad_frames_do_not_end_the_session(self, quiet_client):
         with quiet_client.websocket_connect("/ws/u3/s3") as socket:
             socket.send_text("{ not json")
-            error = json.loads(socket.receive_text())
+            first = json.loads(socket.receive_text())
 
-            socket.send_text(json.dumps({"type": "text", "data": "still there?"}))
+            # A second one proves the loop is still running after the first.
+            socket.send_text(json.dumps({"type": "text", "data": "   "}))
+            second = json.loads(socket.receive_text())
 
-        assert error["type"] == "error"
-        assert "ignored message" in error["data"]
+        assert first["type"] == "error" and "not valid JSON" in first["data"]
+        assert second["type"] == "error" and "non-empty" in second["data"]
 
     def test_each_session_id_gets_its_own_board(self, answering_client):
         """Meeting state must not bleed between two different sessions."""
-        with answering_client.websocket_connect("/ws/u4/room-a") as socket:
-            socket.send_text(json.dumps({"type": "text", "data": "hello"}))
-            [json.loads(socket.receive_text()) for _ in range(4)]
+        boards = []
+        for room in ("room-a", "room-b"):
+            with answering_client.websocket_connect(f"/ws/u4/{room}") as socket:
+                frames = [json.loads(socket.receive_text()) for _ in range(4)]
+            state = next(f for f in frames if f["type"] == "meeting_state")
+            boards.append(state["data"]["decisions"])
 
-        with answering_client.websocket_connect("/ws/u4/room-b") as socket:
-            socket.send_text(json.dumps({"type": "text", "data": "hello"}))
-            frames = [json.loads(socket.receive_text()) for _ in range(4)]
-
-        state = next(f for f in frames if f["type"] == "meeting_state")
-        assert len(state["data"]["decisions"]) == 1
+        assert all(len(board) == 1 for board in boards)
 
 
 @pytest.mark.skipif(
