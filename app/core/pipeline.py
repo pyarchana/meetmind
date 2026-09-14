@@ -211,6 +211,22 @@ async def downstream_task(
             pass
 
 
+def report_failures(tasks) -> None:
+    """
+    Log whichever side fell over.
+
+    Task.exception() raises CancelledError for a cancelled task rather than
+    returning it, so a task the server cancelled from outside would otherwise
+    take the whole teardown with it.
+    """
+    for task in tasks:
+        if task.cancelled():
+            continue
+        error = task.exception()
+        if error:
+            logger.error("[%s] failed: %s", task.get_name(), error)
+
+
 async def run_session_pipeline(
     websocket: WebSocket,
     user_id: str,
@@ -241,10 +257,7 @@ async def run_session_pipeline(
 
     try:
         done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-        for task in done:
-            error = task.exception()
-            if error:
-                logger.error("[%s] failed: %s", task.get_name(), error)
+        report_failures(done)
     finally:
         for task in tasks:
             task.cancel()

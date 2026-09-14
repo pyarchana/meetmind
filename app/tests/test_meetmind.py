@@ -7,6 +7,7 @@ Run with:
 
 import asyncio
 import base64
+import contextlib
 import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -520,3 +521,55 @@ class TestTurnClock:
         clock.end_turn()
         clock.input_forwarded()
         assert clock.first_audio_ms() is not None
+
+
+class TestReportFailures:
+    @pytest.mark.asyncio
+    async def test_a_cancelled_task_is_skipped(self):
+        """
+        Task.exception() raises CancelledError for a cancelled task instead of
+        returning it. Starlette cancels our tasks when the client vanishes, and
+        that used to escape the pipeline as a CancelledError on teardown.
+        """
+        from core.pipeline import report_failures
+
+        async def parked():
+            await asyncio.Event().wait()
+
+        task = asyncio.create_task(parked())
+        await asyncio.sleep(0)
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
+
+        assert task.cancelled()
+        report_failures({task})   # must not raise
+
+    @pytest.mark.asyncio
+    async def test_a_failed_task_is_reported(self, caplog):
+        from core.pipeline import report_failures
+
+        async def boom():
+            raise RuntimeError("gemini went away")
+
+        task = asyncio.create_task(boom(), name="downstream")
+        with contextlib.suppress(RuntimeError):
+            await task
+
+        with caplog.at_level("ERROR"):
+            report_failures({task})
+        assert "gemini went away" in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_a_clean_task_reports_nothing(self, caplog):
+        from core.pipeline import report_failures
+
+        async def fine():
+            return None
+
+        task = asyncio.create_task(fine())
+        await task
+
+        with caplog.at_level("ERROR"):
+            report_failures({task})
+        assert caplog.text == ""
