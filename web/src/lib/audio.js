@@ -3,9 +3,13 @@ export const OUTPUT_SAMPLE_RATE = 24000
 export const INPUT_SAMPLE_RATE = 16000
 
 const MIC_BUFFER_SIZE = 4096
-const SPEECH_THRESHOLD = 0.012
-const SPEECH_FRAMES = 3
-const SILENCE_FRAMES = 25
+export const SPEECH_THRESHOLD = 0.012
+export const SPEECH_FRAMES = 3
+export const SILENCE_FRAMES = 25
+
+// One mic callback covers this much audio. It sets the resolution of every
+// client side timing, barge in included.
+export const FRAME_MS = (MIC_BUFFER_SIZE / INPUT_SAMPLE_RATE) * 1000
 
 /** base64 PCM16 to Float32 in [-1, 1). */
 export function pcm16ToFloat32(base64) {
