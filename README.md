@@ -222,6 +222,34 @@ Screen frames are captured every 5 seconds at 1280x720 resolution (JPEG quality 
 
 ---
 
+## Performance
+
+Measured rather than claimed. The harness lives in [bench/](bench/), and
+[bench/README.md](bench/README.md) covers how to run it and how to read it.
+
+Client side, fixed by the constants in `web/src/lib/audio.js` and pinned by the
+web tests:
+
+| What | Cost |
+|---|---|
+| Mic frame size | 256 ms, so no client timing is finer than that |
+| Speech to playback cut | up to 768 ms, three frames of confirmation |
+| Silence to end of turn | 6400 ms, twenty five frames |
+
+Server round trip numbers need a run against a real key:
+
+```bash
+cd app && MEETMIND_TIMING=1 uvicorn main:app --port 8000
+```
+
+```bash
+python bench/latency.py --runs 20 --label "local, wifi" --out bench/results/local.json
+```
+
+That 768 ms barge in figure is worth sitting with. On most networks it is
+larger than the server round trip, so it, not the model, is what makes an
+interruption feel slow.
+
 ## License
 
 MIT
