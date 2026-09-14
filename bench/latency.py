@@ -8,6 +8,11 @@ Two modes:
     text    Sends a typed question. Fully deterministic, no audio file needed,
             and it isolates the model round trip from anything speech related.
     audio   Streams a 16kHz mono WAV at real time pace, then trailing silence.
+    interrupt
+            Asks a question, lets the agent get going, then talks over it and
+            times how long the server takes to admit it was interrupted. This
+            is the server half of barge in. The browser cuts its own playback
+            as soon as local VAD fires, which the web tests pin instead.
 
 Why the harness stops sending after the question:
     A live browser streams continuously, silence included, because Gemini runs
@@ -28,6 +33,7 @@ server side number.
 import argparse
 import asyncio
 import base64
+import contextlib
 import json
 import math
 import statistics
@@ -87,6 +93,14 @@ def summarise(runs):
         # way that subtracting two wall clock timestamps would not be.
         summary["transport_ms"] = {
             "p50": round(percentile(client, 50) - percentile(server, 50), 1),
+        }
+
+    acks = [r["interrupt_ack_ms"] for r in runs if r.get("interrupt_ack_ms") is not None]
+    if acks:
+        summary["interrupt_ack_ms"] = {
+            "mean": round(statistics.fmean(acks), 1),
+            "p50": round(percentile(acks, 50), 1),
+            "p95": round(percentile(acks, 95), 1),
         }
 
     return summary
@@ -163,33 +177,135 @@ async def run_trial(base_url, mode, pcm, question, timeout):
                 return result
 
 
+async def _collect(socket, marks, result, stop):
+    """
+    Read frames while the sender keeps going.
+
+    Interrupt mode has to talk over the agent, so receiving cannot sit in the
+    same loop as sending the way it does for a plain question.
+    """
+    try:
+        async for raw in socket:
+            message = json.loads(raw)
+            now = time.perf_counter()
+
+            if message["type"] == "audio":
+                if result["first_audio_ms"] is None:
+                    result["first_audio_ms"] = (now - marks["asked"]) * 1000
+                result["last_audio_at"] = now
+
+            elif message["type"] == "timing":
+                result["server_ms"] = message["data"]["server_ms"]
+
+            elif message["type"] == "turn_complete":
+                if message.get("data", {}).get("interrupted") and "spoke_over" in marks:
+                    result["interrupt_ack_ms"] = (now - marks["spoke_over"]) * 1000
+                    result["audio_tail_ms"] = (
+                        (result["last_audio_at"] - marks["spoke_over"]) * 1000
+                        if result.get("last_audio_at") else None
+                    )
+                    stop.set()
+                    return
+
+            elif message["type"] == "error":
+                result["error"] = message["data"]
+                stop.set()
+                return
+    except websockets.ConnectionClosed:
+        pass
+
+
+async def run_interrupt_trial(base_url, pcm, question, timeout, speak_after):
+    """
+    Ask a question, let the agent get going, then talk over it and time how
+    long the server takes to admit it was interrupted.
+
+    This is the server half of barge in. The browser cuts its own playback the
+    moment local VAD fires, which is a client side number and is pinned by the
+    web tests instead.
+    """
+    url = f"{base_url}/ws/bench/{uuid.uuid4().hex[:10]}"
+    result = {
+        "first_audio_ms": None,
+        "interrupt_ack_ms": None,
+        "audio_tail_ms": None,
+        "server_ms": None,
+    }
+    marks = {}
+    stop = asyncio.Event()
+
+    async with websockets.connect(url, max_size=None) as socket:
+        await socket.send(json.dumps({"type": "text", "data": question}))
+        marks["asked"] = time.perf_counter()
+
+        reader = asyncio.create_task(_collect(socket, marks, result, stop))
+        try:
+            deadline = marks["asked"] + timeout
+            while result["first_audio_ms"] is None:
+                if time.perf_counter() > deadline or reader.done():
+                    return result
+                await asyncio.sleep(0.01)
+
+            await asyncio.sleep(speak_after)
+
+            marks["spoke_over"] = time.perf_counter()
+            for frame in list(frames(pcm)) + silence_frames(TRAILING_SILENCE_SECONDS):
+                if stop.is_set():
+                    break
+                await socket.send(json.dumps({
+                    "type": "audio",
+                    "data": base64.b64encode(frame).decode(),
+                }))
+                await asyncio.sleep(FRAME_SECONDS)
+
+            remaining = deadline - time.perf_counter()
+            if remaining > 0:
+                with contextlib.suppress(asyncio.TimeoutError):
+                    await asyncio.wait_for(stop.wait(), timeout=remaining)
+        finally:
+            reader.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await reader
+
+    return result
+
+
 async def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default="ws://127.0.0.1:8000")
-    parser.add_argument("--mode", choices=("text", "audio"), default="text")
+    parser.add_argument("--mode", choices=("text", "audio", "interrupt"), default="text")
     parser.add_argument("--wav", type=Path, help="16kHz mono WAV, required for audio mode")
     parser.add_argument("--question", default=DEFAULT_QUESTION)
     parser.add_argument("--runs", type=int, default=10)
     parser.add_argument("--timeout", type=float, default=20.0)
+    parser.add_argument("--speak-after", type=float, default=1.0,
+                        help="interrupt mode: seconds to let the agent talk first")
     parser.add_argument("--out", type=Path, help="write the full result as JSON")
     parser.add_argument("--label", default="", help="network conditions, host, anything")
     args = parser.parse_args()
 
     pcm = None
-    if args.mode == "audio":
+    if args.mode in ("audio", "interrupt"):
         if not args.wav:
-            raise SystemExit("audio mode needs --wav")
+            raise SystemExit(f"{args.mode} mode needs --wav")
         pcm = read_wav(args.wav)
 
     runs = []
     for index in range(args.runs):
-        trial = await run_trial(args.url, args.mode, pcm, args.question, args.timeout)
+        if args.mode == "interrupt":
+            trial = await run_interrupt_trial(
+                args.url, pcm, args.question, args.timeout, args.speak_after
+            )
+        else:
+            trial = await run_trial(args.url, args.mode, pcm, args.question, args.timeout)
         runs.append(trial)
 
         shown = trial["first_audio_ms"]
         print(f"run {index + 1:>3}/{args.runs}  "
               + (f"{shown:8.1f} ms" if shown is not None else "   no audio")
               + (f"   server {trial['server_ms']:.1f} ms" if trial["server_ms"] else "")
+              + (f"   interrupt ack {trial['interrupt_ack_ms']:.1f} ms"
+                 if trial.get("interrupt_ack_ms") else "")
               + (f"   error: {trial['error']}" if trial.get("error") else ""))
 
     report = {

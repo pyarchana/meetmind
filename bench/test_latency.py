@@ -7,12 +7,16 @@ to report an unknown one.
 """
 
 import asyncio
+import wave
 
 import pytest
 
 from latency import (
     FRAME_SAMPLES,
+    SAMPLE_RATE,
+    run_interrupt_trial,
     percentile,
+    read_wav,
     run_trial,
     silence_frames,
     summarise,
@@ -132,3 +136,69 @@ class TestAgainstMockServer:
             trial = await run_trial("ws://127.0.0.1:8785", "text", None, "q", 1.0)
 
         assert trial["first_audio_ms"] is None
+
+
+def _write_wav(path, seconds=0.5, rate=SAMPLE_RATE, channels=1, width=2):
+    """A WAV of loud-ish alternating samples, enough to stand in for speech."""
+    count = int(rate * seconds)
+    pcm = bytes(bytearray([0x00, 0x40] * count))
+    with wave.open(str(path), "wb") as handle:
+        handle.setnchannels(channels)
+        handle.setsampwidth(width)
+        handle.setframerate(rate)
+        handle.writeframes(pcm)
+    return path
+
+
+class TestReadWav:
+    def test_reads_a_well_formed_file(self, tmp_path):
+        pcm = read_wav(_write_wav(tmp_path / "ok.wav", seconds=0.25))
+        assert len(pcm) == int(SAMPLE_RATE * 0.25) * 2
+
+    def test_refuses_the_wrong_sample_rate(self, tmp_path):
+        path = _write_wav(tmp_path / "wrong.wav", rate=44100)
+        with pytest.raises(SystemExit, match="44100"):
+            read_wav(path)
+
+    def test_refuses_stereo(self, tmp_path):
+        path = _write_wav(tmp_path / "stereo.wav", channels=2)
+        with pytest.raises(SystemExit, match="mono"):
+            read_wav(path)
+
+
+class TestInterruptMode:
+    @pytest.mark.asyncio
+    async def test_times_how_long_the_server_keeps_talking(self, tmp_path):
+        """The mock gives up 300ms after being talked over, so we should read that."""
+        pcm = read_wav(_write_wav(tmp_path / "speech.wav", seconds=0.4))
+
+        async with serve(8791, delay=0.2, interrupt_delay=0.3):
+            trial = await run_interrupt_trial(
+                "ws://127.0.0.1:8791", pcm, "say something long", 15.0, speak_after=0.5
+            )
+
+        assert trial["first_audio_ms"] is not None, "agent never started talking"
+        ack = trial["interrupt_ack_ms"]
+        assert ack is not None, "never saw the interrupted signal"
+        assert 250 < ack < 550, ack
+
+    @pytest.mark.asyncio
+    async def test_separates_a_slow_reaction_from_a_fast_one(self, tmp_path):
+        pcm = read_wav(_write_wav(tmp_path / "speech.wav", seconds=0.4))
+
+        async with serve(8792, delay=0.2, interrupt_delay=0.2):
+            fast = await run_interrupt_trial(
+                "ws://127.0.0.1:8792", pcm, "q", 15.0, speak_after=0.5)
+        async with serve(8793, delay=0.2, interrupt_delay=1.2):
+            slow = await run_interrupt_trial(
+                "ws://127.0.0.1:8793", pcm, "q", 15.0, speak_after=0.5)
+
+        gap = slow["interrupt_ack_ms"] - fast["interrupt_ack_ms"]
+        assert 800 < gap < 1200, gap
+
+    def test_summary_reports_the_interrupt_percentiles(self):
+        runs = [{"first_audio_ms": 400.0, "interrupt_ack_ms": float(v)}
+                for v in range(200, 300, 10)]
+        summary = summarise(runs)
+        assert summary["interrupt_ack_ms"]["p50"] == 240
+        assert summary["interrupt_ack_ms"]["p95"] == 290

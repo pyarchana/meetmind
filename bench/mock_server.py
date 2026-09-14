@@ -15,6 +15,7 @@ Usage:
 
 import argparse
 import asyncio
+import contextlib
 import base64
 import json
 import time
@@ -55,10 +56,51 @@ async def answer_after_quiet(socket, delay, quiet_gap=QUIET_GAP_SECONDS):
     await socket.send(json.dumps({"type": "turn_complete"}))
 
 
-def serve(port, delay, quiet_gap=QUIET_GAP_SECONDS):
+async def answer_then_be_interrupted(socket, delay, interrupt_delay):
+    """
+    Answer, keep talking, and admit defeat a fixed time after somebody talks
+    over the top. Only one task sends at a time: the talker is stopped and
+    awaited before the final frame goes out.
+    """
+    await socket.recv()
+    await asyncio.sleep(delay)
+    await socket.send(json.dumps({
+        "type": "timing", "data": {"server_ms": round(delay * 1000, 2)},
+    }))
+
+    stop = asyncio.Event()
+
+    async def keep_talking():
+        while not stop.is_set():
+            await socket.send(json.dumps({
+                "type": "audio",
+                "data": base64.b64encode(REPLY_PCM).decode(),
+            }))
+            await asyncio.sleep(0.1)
+
+    talker = asyncio.create_task(keep_talking())
+    try:
+        await socket.recv()
+        await asyncio.sleep(interrupt_delay)
+        stop.set()
+        await talker
+        await socket.send(json.dumps({
+            "type": "turn_complete", "data": {"interrupted": True},
+        }))
+    finally:
+        stop.set()
+        talker.cancel()
+        with contextlib.suppress(asyncio.CancelledError, websockets.ConnectionClosed):
+            await talker
+
+
+def serve(port, delay, quiet_gap=QUIET_GAP_SECONDS, interrupt_delay=None):
     async def handler(socket):
         try:
-            await answer_after_quiet(socket, delay, quiet_gap)
+            if interrupt_delay is None:
+                await answer_after_quiet(socket, delay, quiet_gap)
+            else:
+                await answer_then_be_interrupted(socket, delay, interrupt_delay)
         except websockets.ConnectionClosed:
             pass
 
@@ -69,9 +111,11 @@ async def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--delay", type=float, default=0.4, help="seconds before replying")
+    parser.add_argument("--interrupt-delay", type=float, default=None,
+                        help="seconds to keep talking after being interrupted")
     args = parser.parse_args()
 
-    async with serve(args.port, args.delay):
+    async with serve(args.port, args.delay, interrupt_delay=args.interrupt_delay):
         print(f"mock server on ws://127.0.0.1:{args.port}, replying after {args.delay}s")
         await asyncio.Future()
 
