@@ -109,7 +109,7 @@ class TestWebSocketRoute:
         assert by_type["transcript_agent"]["data"] == "Paris."
         assert by_type["audio"]["data"]
         assert by_type["meeting_state"]["data"]["decisions"][0]["text"] == "ship on friday"
-        assert "turn_complete" in by_type
+        assert by_type["turn_complete"]["data"] == {"interrupted": False}
 
     def test_a_good_audio_frame_draws_no_complaint(self, quiet_client):
         """

@@ -199,7 +199,14 @@ async def downstream_task(
                 clock.end_turn()
                 last_user_transcript = ""
                 last_agent_transcript = ""
-                await websocket.send_text(json.dumps({"type": "turn_complete"}))
+                # The reason matters to the caller. A turn that ended because
+                # somebody spoke over the agent is the thing bench/latency.py
+                # times in interrupt mode, and it is not the same event as an
+                # answer finishing on its own.
+                await websocket.send_text(json.dumps({
+                    "type": "turn_complete",
+                    "data": {"interrupted": bool(event.interrupted)},
+                }))
 
     except Exception as e:
         logger.error(f"[downstream] error: {e}")

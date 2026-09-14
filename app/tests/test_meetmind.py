@@ -300,7 +300,12 @@ class TestDownstreamTask:
     @pytest.mark.asyncio
     async def test_turn_complete_reaches_the_browser(self):
         frames = await _browser_sees([_event(turn_complete=True)])
-        assert {"type": "turn_complete"} in frames
+        assert frames == [{"type": "turn_complete", "data": {"interrupted": False}}]
+
+    @pytest.mark.asyncio
+    async def test_an_interrupted_turn_says_so(self):
+        frames = await _browser_sees([_event(interrupted=True)])
+        assert frames == [{"type": "turn_complete", "data": {"interrupted": True}}]
 
     @pytest.mark.asyncio
     async def test_short_answer_after_a_long_one_still_arrives(self):
