@@ -22,8 +22,9 @@ from fastapi.websockets import WebSocketDisconnect
 from google.adk.agents.live_request_queue import LiveRequestQueue
 from google.genai import types
 
-from core.config import INPUT_SAMPLE_RATE
+from core.config import INPUT_SAMPLE_RATE, TIMING_ENABLED
 from core.session import runner, build_run_config, get_or_create_session
+from core.timing import TurnClock
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,7 @@ def parse_client_message(raw: str) -> tuple[str, object]:
 async def upstream_task(
     websocket: WebSocket,
     live_request_queue: LiveRequestQueue,
+    clock: TurnClock,
 ) -> None:
     """
     Reads messages from the browser WebSocket and forwards them to
@@ -95,6 +97,7 @@ async def upstream_task(
                 live_request_queue.send_realtime(payload)
             else:
                 live_request_queue.send_content(payload)
+            clock.input_forwarded()
 
     except WebSocketDisconnect:
         logger.info("[upstream] client disconnected")
@@ -105,6 +108,7 @@ async def downstream_task(
     live_request_queue: LiveRequestQueue,
     user_id: str,
     session_id: str,
+    clock: TurnClock,
 ) -> None:
     """
     Iterates over events from runner.run_live() and forwards them to
@@ -147,6 +151,12 @@ async def downstream_task(
             if event.content and event.content.parts:
                 for part in event.content.parts:
                     if part.inline_data and part.inline_data.mime_type.startswith("audio"):
+                        answered_in = clock.first_audio_ms()
+                        if answered_in is not None:
+                            await websocket.send_text(
+                                json.dumps({"type": "timing",
+                                            "data": {"server_ms": answered_in}})
+                            )
                         audio_b64 = base64.b64encode(part.inline_data.data).decode()
                         await websocket.send_text(
                             json.dumps({"type": "audio", "data": audio_b64})
@@ -186,6 +196,7 @@ async def downstream_task(
                 )
 
             if event.turn_complete or event.interrupted:
+                clock.end_turn()
                 last_user_transcript = ""
                 last_agent_transcript = ""
                 await websocket.send_text(json.dumps({"type": "turn_complete"}))
@@ -215,14 +226,15 @@ async def run_session_pipeline(
     """
     await get_or_create_session(user_id, session_id)
     live_request_queue = LiveRequestQueue()
+    clock = TurnClock(TIMING_ENABLED)
 
     tasks = [
         asyncio.create_task(
-            upstream_task(websocket, live_request_queue),
+            upstream_task(websocket, live_request_queue, clock),
             name="upstream",
         ),
         asyncio.create_task(
-            downstream_task(websocket, live_request_queue, user_id, session_id),
+            downstream_task(websocket, live_request_queue, user_id, session_id, clock),
             name="downstream",
         ),
     ]

@@ -18,3 +18,6 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 # The browser captures at this rate and tags every audio blob with it.
 INPUT_SAMPLE_RATE = 16000
+
+# Emit stage timings for bench/latency.py. Off in normal use.
+TIMING_ENABLED = os.getenv("MEETMIND_TIMING") == "1"

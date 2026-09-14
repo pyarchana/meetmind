@@ -15,6 +15,8 @@ import pytest
 from fastapi.websockets import WebSocketDisconnect
 from google.genai import types
 
+from core.timing import TurnClock
+
 
 # ---------------------------------------------------------------------------
 # core/config.py
@@ -141,7 +143,7 @@ class TestUpstreamTask:
         ])
 
         queue = MagicMock()
-        await upstream_task(websocket, queue)
+        await upstream_task(websocket, queue, TurnClock(enabled=False))
 
         assert queue.send_realtime.call_args[0][0].data == pcm
 
@@ -156,7 +158,7 @@ class TestUpstreamTask:
         ])
 
         queue = MagicMock()
-        await upstream_task(websocket, queue)
+        await upstream_task(websocket, queue, TurnClock(enabled=False))
 
         assert queue.send_content.call_args[0][0].parts[0].text == "What is the ROI formula?"
 
@@ -172,7 +174,7 @@ class TestUpstreamTask:
         ])
 
         queue = MagicMock()
-        await upstream_task(websocket, queue)
+        await upstream_task(websocket, queue, TurnClock(enabled=False))
 
         assert queue.send_realtime.call_args[0][0].mime_type == "image/jpeg"
 
@@ -187,7 +189,7 @@ class TestUpstreamTask:
         ])
 
         queue = MagicMock()
-        await upstream_task(websocket, queue)
+        await upstream_task(websocket, queue, TurnClock(enabled=False))
 
         queue.send_realtime.assert_not_called()
         queue.send_content.assert_not_called()
@@ -210,7 +212,7 @@ class TestUpstreamTask:
         ])
 
         queue = MagicMock()
-        await upstream_task(websocket, queue)
+        await upstream_task(websocket, queue, TurnClock(enabled=False))
 
         assert queue.send_content.call_count == 1
         assert queue.send_content.call_args[0][0].parts[0].text == "did this survive?"
@@ -254,7 +256,9 @@ async def _browser_sees(events):
 
     websocket = AsyncMock()
     with patch.object(pipeline.runner, "run_live", stream):
-        await pipeline.downstream_task(websocket, MagicMock(), "u", "s")
+        await pipeline.downstream_task(
+            websocket, MagicMock(), "u", "s", TurnClock(enabled=False)
+        )
 
     return [json.loads(call[0][0]) for call in websocket.send_text.call_args_list]
 
@@ -475,3 +479,44 @@ class TestRunSessionPipeline:
             )
 
         assert queue.close.called
+
+
+# ---------------------------------------------------------------------------
+# core/timing.py
+# ---------------------------------------------------------------------------
+
+class TestTurnClock:
+    def test_disabled_clock_measures_nothing(self):
+        clock = TurnClock(enabled=False)
+        clock.input_forwarded()
+        assert clock.first_audio_ms() is None
+
+    def test_reports_elapsed_time_after_input(self):
+        clock = TurnClock(enabled=True)
+        clock.input_forwarded()
+        elapsed = clock.first_audio_ms()
+        assert elapsed is not None and elapsed >= 0
+
+    def test_reports_nothing_before_any_input(self):
+        assert TurnClock(enabled=True).first_audio_ms() is None
+
+    def test_reports_once_per_turn(self):
+        """
+        Gemini sends many audio parts per answer. Only the first one is the
+        time to answer; the rest would report near zero and drag the mean down.
+        """
+        clock = TurnClock(enabled=True)
+        clock.input_forwarded()
+
+        assert clock.first_audio_ms() is not None
+        assert clock.first_audio_ms() is None
+        assert clock.first_audio_ms() is None
+
+    def test_next_turn_reports_again(self):
+        clock = TurnClock(enabled=True)
+        clock.input_forwarded()
+        clock.first_audio_ms()
+
+        clock.end_turn()
+        clock.input_forwarded()
+        assert clock.first_audio_ms() is not None
