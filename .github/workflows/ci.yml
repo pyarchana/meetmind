@@ -27,6 +27,10 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v
 
+      - name: Run benchmark harness tests
+        working-directory: ${{ github.workspace }}/bench
+        run: pytest . -v
+
   style:
     runs-on: ubuntu-latest
 
