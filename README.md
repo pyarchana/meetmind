@@ -3,6 +3,7 @@
   <p><strong>A real-time AI meeting co-pilot powered by Gemini Live API</strong></p>
 
   <p>
+    <a href="https://github.com/pyarchana/meetmind/actions/workflows/ci.yml"><img src="https://github.com/pyarchana/meetmind/actions/workflows/ci.yml/badge.svg" /></a>
     <img src="https://img.shields.io/badge/Gemini-Live%20API-4285F4?style=flat-square&logo=google" />
     <img src="https://img.shields.io/badge/Google-ADK-34A853?style=flat-square&logo=google" />
     <img src="https://img.shields.io/badge/FastAPI-Backend-009688?style=flat-square&logo=fastapi" />
@@ -171,7 +172,7 @@ Open `http://127.0.0.1:8000` in Chrome.
 ### Running Tests
 
 ```bash
-pip install pytest pytest-asyncio
+pip install -r requirements-dev.txt
 pytest tests/ -v
 ```
 
