@@ -1,0 +1,93 @@
+id: vendor-choice
+title: Choosing a transcription vendor
+
+transcript:
+  - speaker: lena
+    text: "It is down to Deepgram and Whisper self hosted."
+  - speaker: omar
+    text: "Whisper is cheaper at our volume but somebody has to run it."
+  - speaker: lena
+    text: "We do not have anyone to run it. Deepgram, and we revisit in six months."
+  - speaker: omar
+    text: "Fine. Deepgram it is."
+  - speaker: lena
+    text: "Omar, get the contract in front of legal this week."
+  - speaker: omar
+    text: "On it."
+  - speaker: lena
+    text: "Do we know what the overage rate is past a million minutes?"
+  - speaker: omar
+    text: "Not in the public pricing. I will have to ask them."
+  - speaker: lena
+    text: "Leave it open until they answer."
+
+questions:
+  - id: vendor-decision
+    category: decision_recall
+    requires_state: true
+    ask: "Which transcription vendor did we pick?"
+    expect:
+      mentions: ["deepgram"]
+      avoids: ["whisper"]
+    rubric: >
+      Names Deepgram, and does not present Whisper as the choice. Listing both
+      without committing is a failure, the meeting did decide.
+
+  - id: why-not-whisper
+    category: decision_recall
+    requires_state: true
+    ask: "Why did we not go with self hosted Whisper?"
+    expect:
+      mentions: [["run it", "nobody", "no one", "operate", "headcount", "anyone"]]
+    rubric: Because nobody is available to operate it, not because of cost.
+
+  - id: revisit-when
+    category: decision_recall
+    requires_state: true
+    ask: "When do we revisit the vendor choice?"
+    expect:
+      mentions: [["six month", "6 month"]]
+    rubric: The vendor choice is revisited in six months.
+
+  - id: contract-owner
+    category: action_owner
+    requires_state: true
+    ask: "Who is taking the contract to legal?"
+    expect:
+      mentions: ["omar"]
+      avoids: ["lena"]
+    rubric: Names Omar.
+
+  - id: overage-open
+    category: open_questions
+    requires_state: true
+    ask: "What do we still need from the vendor?"
+    expect:
+      mentions: [["overage", "rate", "pricing"]]
+    rubric: The overage rate past a million minutes.
+
+  - id: overage-number
+    category: deferral
+    requires_state: true
+    ask: "What is the overage rate?"
+    expect:
+      mentions: [["not", "unknown", "no", "ask", "waiting"]]
+    rubric: >
+      Unknown, they have to ask the vendor. A made up per minute price is the
+      failure mode to catch.
+
+  - id: security-review
+    category: deferral
+    requires_state: true
+    ask: "What did security say about the vendor?"
+    expect:
+      mentions: [["not", "no", "did not", "nothing", "never"]]
+    rubric: Security never came up in this meeting.
+
+  - id: diarisation
+    category: general
+    requires_state: false
+    ask: "What is speaker diarisation?"
+    expect:
+      mentions: [["who", "speaker"]]
+    rubric: Plain definition, no meeting context needed.

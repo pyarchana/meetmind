@@ -1,0 +1,113 @@
+id: hiring-debrief
+title: Debrief on a backend candidate
+
+transcript:
+  - speaker: nina
+    text: "Backend loop for Arjun. I will go last. Kai?"
+  - speaker: kai
+    text: "Strong on systems. His schema design was the best I have seen this quarter."
+  - speaker: jo
+    text: "I had the coding round. Solved it, but needed two hints on the edge cases."
+  - speaker: nina
+    text: "Mine was behavioural. No concerns."
+  - speaker: kai
+    text: "So, hire?"
+  - speaker: nina
+    text: "Hire. Level is the question. I think senior, not staff."
+  - speaker: jo
+    text: "Senior feels right given the hints."
+  - speaker: nina
+    text: "Senior it is. Kai, write the offer justification by Wednesday."
+  - speaker: kai
+    text: "Wednesday, yes."
+  - speaker: nina
+    text: "What is the comp band for senior backend in Berlin these days?"
+  - speaker: jo
+    text: "I would have to look, it changed last month."
+  - speaker: nina
+    text: "Find out before the offer goes out."
+
+questions:
+  - id: hire-decision
+    category: decision_recall
+    requires_state: true
+    ask: "Are we hiring Arjun?"
+    expect:
+      mentions: ["hire"]
+    rubric: Yes, hire. Hedging is a failure, the panel decided.
+
+  - id: level-decision
+    category: decision_recall
+    requires_state: true
+    ask: "What level did we settle on?"
+    expect:
+      mentions: ["senior"]
+      avoids: ["staff"]
+    rubric: Senior, explicitly not staff.
+
+  - id: why-not-staff
+    category: decision_recall
+    requires_state: true
+    ask: "Why senior rather than staff?"
+    expect:
+      mentions: [["hint", "hints", "edge case"]]
+    rubric: Because he needed two hints on the edge cases.
+
+  - id: justification-owner
+    category: action_owner
+    requires_state: true
+    ask: "Who is writing the offer justification?"
+    expect:
+      mentions: ["kai"]
+      avoids: ["jo", "nina"]
+    rubric: Names Kai.
+
+  - id: justification-due
+    category: action_owner
+    requires_state: true
+    ask: "When is the offer justification due?"
+    expect:
+      mentions: ["wednesday"]
+    rubric: The offer justification is due Wednesday.
+
+  - id: comp-band-open
+    category: open_questions
+    requires_state: true
+    ask: "What do we need to find out before the offer?"
+    expect:
+      mentions: [["comp", "band", "salary"]]
+    rubric: The senior backend comp band in Berlin.
+
+  - id: comp-number
+    category: deferral
+    requires_state: true
+    ask: "What is the comp band for senior backend in Berlin?"
+    expect:
+      mentions: [["not", "unknown", "no", "look", "changed", "find"]]
+    rubric: >
+      Nobody in the room knew. A confident salary range here is invented and
+      would be acted on, which makes it a costly failure.
+
+  - id: start-date
+    category: deferral
+    requires_state: true
+    ask: "When does he start?"
+    expect:
+      mentions: [["not", "no", "did not", "nothing", "never"]]
+    rubric: A start date was never discussed.
+
+  - id: who-gave-coding
+    category: action_owner
+    requires_state: true
+    ask: "Who ran the coding round?"
+    expect:
+      mentions: ["jo"]
+    rubric: Jo ran the coding round.
+
+  - id: structured-interview
+    category: general
+    requires_state: false
+    ask: "Why do companies use structured interviews?"
+    expect:
+      mentions: [["compar", "consistent", "bias", "fair"]]
+    rubric: Plain explanation, no meeting needed.

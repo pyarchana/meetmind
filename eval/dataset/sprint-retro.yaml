@@ -1,0 +1,110 @@
+id: sprint-retro
+title: Retro for the sprint that slipped
+
+transcript:
+  - speaker: amir
+    text: "We committed to nine points and finished five."
+  - speaker: bea
+    text: "Two of us were pulled into the incident for three days."
+  - speaker: amir
+    text: "Right, but we also never cut scope when that happened."
+  - speaker: bea
+    text: "That is the real miss. We should replan when we lose a person."
+  - speaker: amir
+    text: "Let us make that a rule. Any time someone is out more than a day, we replan."
+  - speaker: bea
+    text: "Agreed. Replan whenever we lose someone for over a day."
+  - speaker: amir
+    text: "Bea, add it to the team working agreement."
+  - speaker: bea
+    text: "Will do, before next planning."
+  - speaker: amir
+    text: "Should we lower the commitment next sprint to be safe?"
+  - speaker: bea
+    text: "I would rather see one clean sprint first. Not settled."
+
+questions:
+  - id: points-gap
+    category: decision_recall
+    requires_state: true
+    ask: "How many points did we commit to and finish?"
+    expect:
+      mentions: [["nine", "9"], ["five", "5"]]
+    rubric: Nine committed, five finished. Both numbers.
+
+  - id: root-miss
+    category: decision_recall
+    requires_state: true
+    ask: "What did the team decide the real miss was?"
+    expect:
+      mentions: [["scope", "replan", "cut"]]
+    rubric: >
+      Not cutting scope when people were pulled away. Answering "the incident"
+      is the surface cause and the meeting explicitly went past it.
+
+  - id: new-rule
+    category: decision_recall
+    requires_state: true
+    ask: "What new rule did we agree?"
+    expect:
+      mentions: ["replan"]
+    rubric: Replan whenever someone is out more than a day.
+
+  - id: agreement-owner
+    category: action_owner
+    requires_state: true
+    ask: "Who is updating the working agreement?"
+    expect:
+      mentions: ["bea"]
+      avoids: ["amir"]
+    rubric: Names Bea.
+
+  - id: agreement-due
+    category: action_owner
+    requires_state: true
+    ask: "By when does the working agreement change?"
+    expect:
+      mentions: [["planning", "next planning", "before"]]
+    rubric: Before next planning.
+
+  - id: commitment-open
+    category: open_questions
+    requires_state: true
+    ask: "What did we leave unsettled?"
+    expect:
+      mentions: [["commitment", "lower", "next sprint", "points"]]
+    rubric: Whether to lower next sprint's commitment.
+
+  - id: next-commitment
+    category: deferral
+    requires_state: true
+    ask: "What is next sprint's commitment?"
+    expect:
+      mentions: [["not", "no", "unsettled", "undecided", "yet"]]
+    rubric: >
+      Not settled. Bea wanted one clean sprint first. A number here is
+      invented.
+
+  - id: incident-cause
+    category: deferral
+    requires_state: true
+    ask: "What caused the incident that pulled people away?"
+    expect:
+      mentions: [["not", "no", "did not", "nothing", "never"]]
+    rubric: The incident was mentioned but never explained in this meeting.
+
+  - id: velocity
+    category: general
+    requires_state: false
+    ask: "What is velocity in agile planning?"
+    expect:
+      mentions: [["point", "work", "sprint", "complet"]]
+    rubric: A plain correct definition is enough here.
+
+  - id: retro-purpose
+    category: general
+    requires_state: false
+    ask: "What is a retrospective for?"
+    expect:
+      mentions: [["improve", "learn", "reflect", "better", "process"]]
+    rubric: A plain correct explanation is enough here.

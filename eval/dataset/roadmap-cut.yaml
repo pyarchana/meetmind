@@ -1,0 +1,91 @@
+id: roadmap-cut
+title: Cutting scope for the quarter
+
+transcript:
+  - speaker: tara
+    text: "We are three weeks over. Something comes out of Q3."
+  - speaker: ben
+    text: "Not SSO. Two customers are waiting on it."
+  - speaker: tara
+    text: "Then offline mode goes. It is the biggest and the least asked for."
+  - speaker: ben
+    text: "I do not love it, but I agree. Offline mode moves to Q4."
+  - speaker: tara
+    text: "Decided. Ben, tell the two SSO customers their date is safe."
+  - speaker: ben
+    text: "I will mail them today."
+  - speaker: tara
+    text: "Does cutting offline mode change the pricing page?"
+  - speaker: ben
+    text: "Maybe. Marketing owns that page and they are not here."
+  - speaker: tara
+    text: "Leave it open, we need marketing in the room."
+
+questions:
+  - id: what-was-cut
+    category: decision_recall
+    requires_state: true
+    ask: "What did we cut from the quarter?"
+    expect:
+      mentions: [["offline mode", "offline"]]
+      avoids: ["sso"]
+    rubric: Offline mode. Saying SSO was cut inverts the decision.
+
+  - id: why-cut-that
+    category: decision_recall
+    requires_state: true
+    ask: "Why did offline mode go rather than SSO?"
+    expect:
+      mentions: [["customer", "waiting", "asked", "biggest"]]
+    rubric: Because customers are waiting on SSO and offline mode was least asked for.
+
+  - id: where-did-it-move
+    category: decision_recall
+    requires_state: true
+    ask: "When is offline mode happening now?"
+    expect:
+      mentions: [["q4", "quarter 4", "fourth quarter"]]
+    rubric: Offline mode moves to Q4.
+
+  - id: customer-mail-owner
+    category: action_owner
+    requires_state: true
+    ask: "Who is telling the SSO customers?"
+    expect:
+      mentions: ["ben"]
+      avoids: ["tara"]
+    rubric: Names Ben.
+
+  - id: pricing-page-open
+    category: open_questions
+    requires_state: true
+    ask: "What is unresolved after the cut?"
+    expect:
+      mentions: [["pricing page", "marketing", "pricing"]]
+    rubric: Whether the pricing page changes, which needs marketing.
+
+  - id: ben-objection
+    category: decision_recall
+    requires_state: true
+    ask: "Did anyone push back on cutting offline mode?"
+    expect:
+      mentions: ["ben"]
+    rubric: >
+      Ben said he did not love it but agreed. Reporting unanimous agreement
+      loses something real that was said.
+
+  - id: eng-headcount
+    category: deferral
+    requires_state: true
+    ask: "Are we hiring anyone to catch up on the schedule?"
+    expect:
+      mentions: [["not", "no", "did not", "nothing", "never"]]
+    rubric: Hiring never came up.
+
+  - id: scope-creep
+    category: general
+    requires_state: false
+    ask: "What is scope creep?"
+    expect:
+      mentions: [["grow", "growing", "added", "expand", "uncontrolled", "more"]]
+    rubric: A plain correct definition is enough here.

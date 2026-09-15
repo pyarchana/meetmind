@@ -1,0 +1,113 @@
+id: checkout-incident
+title: Postmortem for the checkout outage
+
+transcript:
+  - speaker: rob
+    text: "Checkout was down forty minutes on Tuesday night."
+  - speaker: maya
+    text: "Root cause was the connection pool. We capped it at ten and traffic tripled."
+  - speaker: rob
+    text: "So the fix is raising the cap?"
+  - speaker: maya
+    text: "Raising it helps, but the real fix is autoscaling the pool. Let us do both."
+  - speaker: rob
+    text: "Agreed, we autoscale the pool. Maya, you own that."
+  - speaker: maya
+    text: "Mine. I will have it behind a flag by the end of next week."
+  - speaker: rob
+    text: "Did any orders actually fail, or did they retry?"
+  - speaker: maya
+    text: "I do not know yet, support is still counting."
+  - speaker: rob
+    text: "Park it until support comes back. Also we need an alert on pool saturation."
+  - speaker: rob
+    text: "I will take the alert."
+
+questions:
+  - id: root-cause
+    category: decision_recall
+    requires_state: true
+    ask: "What caused the outage?"
+    expect:
+      mentions: [["connection pool", "pool"]]
+    rubric: Names the connection pool cap. Vague infrastructure talk is a failure.
+
+  - id: the-fix
+    category: decision_recall
+    requires_state: true
+    ask: "What did we decide to do about it?"
+    expect:
+      mentions: [["autoscal", "auto scal"]]
+    rubric: >
+      Says autoscaling the pool. Saying only "raise the cap" is a failure,
+      because the meeting explicitly chose the broader fix.
+
+  - id: outage-length
+    category: decision_recall
+    requires_state: true
+    ask: "How long was checkout down?"
+    expect:
+      mentions: [["forty", "40"]]
+    rubric: Checkout was down forty minutes.
+
+  - id: autoscale-owner
+    category: action_owner
+    requires_state: true
+    ask: "Who owns the autoscaling work?"
+    expect:
+      mentions: ["maya"]
+      avoids: ["rob"]
+    rubric: Names Maya.
+
+  - id: alert-owner
+    category: action_owner
+    requires_state: true
+    ask: "Who is adding the saturation alert?"
+    expect:
+      mentions: ["rob"]
+      avoids: ["maya"]
+    rubric: >
+      Names Rob. This one is a trap: Maya owns the larger piece, so a model
+      skimming for the engineer will answer Maya.
+
+  - id: failed-orders
+    category: deferral
+    requires_state: true
+    ask: "How many orders failed?"
+    expect:
+      mentions: [["not", "unknown", "still", "waiting", "counting", "no"]]
+    rubric: >
+      Says the number is not known yet and support is still counting. A
+      specific figure is invented.
+
+  - id: still-open
+    category: open_questions
+    requires_state: true
+    ask: "What is still open from the postmortem?"
+    expect:
+      mentions: [["order", "failed", "support"]]
+    rubric: Surfaces the unanswered question about failed orders.
+
+  - id: compensation
+    category: deferral
+    requires_state: true
+    ask: "Are we giving affected customers a refund?"
+    expect:
+      mentions: [["not", "no", "did not", "nothing", "never"]]
+    rubric: Refunds never came up. Any policy stated as a decision is invented.
+
+  - id: pool-definition
+    category: general
+    requires_state: false
+    ask: "In one sentence, what is a database connection pool?"
+    expect:
+      mentions: [["reuse", "reusable", "connections"]]
+    rubric: A plain definition. Does not need the meeting.
+
+  - id: sev-definition
+    category: general
+    requires_state: false
+    ask: "What does a blameless postmortem mean?"
+    expect:
+      mentions: [["blame", "cause", "process", "system"]]
+    rubric: Plain explanation of the practice.

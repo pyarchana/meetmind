@@ -1,0 +1,99 @@
+id: design-review
+title: Design review for the settings redesign
+
+transcript:
+  - speaker: cleo
+    text: "Two options. Tabs across the top, or a left rail."
+  - speaker: dan
+    text: "The rail scales better. We have eleven sections and tabs will wrap."
+  - speaker: cleo
+    text: "Rail then. And we drop the search box, nobody used it."
+  - speaker: dan
+    text: "Careful, the analytics only cover two weeks."
+  - speaker: cleo
+    text: "Fair. Keep search, move it into the rail. Decided."
+  - speaker: dan
+    text: "Dan takes the rail component, I will have it in Figma by Thursday."
+  - speaker: cleo
+    text: "What does this do to mobile? The rail will not fit."
+  - speaker: dan
+    text: "Genuinely do not know yet. Needs its own session."
+  - speaker: cleo
+    text: "Open, we book mobile separately."
+
+questions:
+  - id: nav-decision
+    category: decision_recall
+    requires_state: true
+    ask: "Which navigation did we pick for settings?"
+    expect:
+      mentions: [["rail", "left rail"]]
+      avoids: ["tabs across"]
+    rubric: The left rail was chosen over tabs.
+
+  - id: why-rail
+    category: decision_recall
+    requires_state: true
+    ask: "Why the rail over tabs?"
+    expect:
+      mentions: [["eleven", "11", "wrap", "scale"]]
+    rubric: Eleven sections would make tabs wrap.
+
+  - id: search-fate
+    category: decision_recall
+    requires_state: true
+    ask: "Are we keeping the settings search box?"
+    expect:
+      mentions: [["keep", "keeping", "kept", "yes", "rail"]]
+    rubric: >
+      Kept, moved into the rail. The meeting reversed itself here, so an
+      answer of "dropped" is recall of the wrong half of the conversation.
+
+  - id: why-keep-search
+    category: decision_recall
+    requires_state: true
+    ask: "Why did we not drop search after all?"
+    expect:
+      mentions: [["analytic", "two week", "2 week", "data"]]
+    rubric: The analytics only covered two weeks.
+
+  - id: rail-owner
+    category: action_owner
+    requires_state: true
+    ask: "Who is building the rail component?"
+    expect:
+      mentions: ["dan"]
+      avoids: ["cleo"]
+    rubric: Names Dan.
+
+  - id: figma-due
+    category: action_owner
+    requires_state: true
+    ask: "When is the Figma work due?"
+    expect:
+      mentions: ["thursday"]
+    rubric: The Figma work is due Thursday.
+
+  - id: mobile-open
+    category: open_questions
+    requires_state: true
+    ask: "What is unresolved?"
+    expect:
+      mentions: ["mobile"]
+    rubric: What the rail does on mobile.
+
+  - id: mobile-answer
+    category: deferral
+    requires_state: true
+    ask: "How does the rail work on mobile?"
+    expect:
+      mentions: [["not", "no", "unknown", "session", "yet"]]
+    rubric: Not known, it needs its own session.
+
+  - id: affordance
+    category: general
+    requires_state: false
+    ask: "What is an affordance in interface design?"
+    expect:
+      mentions: [["suggest", "signal", "indicate", "how", "use"]]
+    rubric: A plain correct definition is enough here.

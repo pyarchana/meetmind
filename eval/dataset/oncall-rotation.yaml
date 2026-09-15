@@ -1,0 +1,96 @@
+id: oncall-rotation
+title: Reworking the on call rotation
+
+transcript:
+  - speaker: fay
+    text: "Three people carried every page last quarter. That is not a rotation."
+  - speaker: gus
+    text: "The rest of us are not trusted on prod yet, that is why."
+  - speaker: fay
+    text: "Then we fix that. Shadow rotation for a month, then everyone joins."
+  - speaker: gus
+    text: "Agreed, one month shadowing before anyone goes primary."
+  - speaker: fay
+    text: "Gus, build the shadow schedule by Monday."
+  - speaker: gus
+    text: "Monday."
+  - speaker: fay
+    text: "Do we pay an on call stipend? Other teams do."
+  - speaker: gus
+    text: "No idea, that is a people team question."
+  - speaker: fay
+    text: "Open until we ask them."
+
+questions:
+  - id: rotation-decision
+    category: decision_recall
+    requires_state: true
+    ask: "What did we decide about on call?"
+    expect:
+      mentions: [["shadow", "shadowing"]]
+    rubric: A one month shadow rotation before anyone goes primary.
+
+  - id: shadow-length
+    category: decision_recall
+    requires_state: true
+    ask: "How long is the shadow period?"
+    expect:
+      mentions: [["one month", "a month", "1 month"]]
+    rubric: The shadow period is one month.
+
+  - id: schedule-owner
+    category: action_owner
+    requires_state: true
+    ask: "Who is building the shadow schedule?"
+    expect:
+      mentions: ["gus"]
+      avoids: ["fay"]
+    rubric: Names Gus.
+
+  - id: schedule-due
+    category: action_owner
+    requires_state: true
+    ask: "When is the schedule due?"
+    expect:
+      mentions: ["monday"]
+    rubric: The shadow schedule is due Monday.
+
+  - id: stipend-open
+    category: open_questions
+    requires_state: true
+    ask: "What is still open?"
+    expect:
+      mentions: [["stipend", "pay", "people team"]]
+    rubric: Whether there is an on call stipend.
+
+  - id: stipend-amount
+    category: deferral
+    requires_state: true
+    ask: "How much is the on call stipend?"
+    expect:
+      mentions: [["not", "no", "unknown", "ask", "idea"]]
+    rubric: Nobody knew. A figure here is invented.
+
+  - id: pager-tool
+    category: deferral
+    requires_state: true
+    ask: "Which paging tool are we switching to?"
+    expect:
+      mentions: [["not", "no", "did not", "nothing", "never"]]
+    rubric: Tooling never came up.
+
+  - id: toil-meaning
+    category: general
+    requires_state: false
+    ask: "What does toil mean in an SRE context?"
+    expect:
+      mentions: [["manual", "repetitive", "automat"]]
+    rubric: A plain correct definition is enough here.
+
+  - id: error-budget
+    category: general
+    requires_state: false
+    ask: "What is an error budget?"
+    expect:
+      mentions: [["reliability", "slo", "budget", "allow"]]
+    rubric: A plain correct definition is enough here.

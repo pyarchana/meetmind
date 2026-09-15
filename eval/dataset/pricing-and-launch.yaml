@@ -1,0 +1,120 @@
+id: pricing-and-launch
+title: Pricing model and launch date
+
+transcript:
+  - speaker: priya
+    text: "We need pricing settled before the board call on Thursday."
+  - speaker: sam
+    text: "Per seat is simpler to explain, but our usage is lumpy."
+  - speaker: priya
+    text: "Usage based then. Three tiers, and we keep a free trial."
+  - speaker: dev
+    text: "Works for me. Usage based, three tiers."
+  - speaker: priya
+    text: "Decided. Sam, can you write the pricing page copy by Friday?"
+  - speaker: sam
+    text: "Yes, I will have a draft Friday."
+  - speaker: dev
+    text: "What about the enterprise discount, do we have a floor?"
+  - speaker: priya
+    text: "Good question, nobody knows yet. Park it, we need finance."
+  - speaker: priya
+    text: "Launch stays on the twelfth. Dev, you own the migration script."
+  - speaker: dev
+    text: "Got it, migration script is mine."
+
+questions:
+  - id: pricing-model
+    category: decision_recall
+    requires_state: true
+    ask: "What did we decide about pricing?"
+    expect:
+      mentions: [["usage based", "usage-based"]]
+      avoids: ["per seat"]
+    rubric: >
+      Names usage based pricing as the decision the meeting reached. Generic
+      pricing advice is a failure even when the advice is sensible, because
+      the point is recall from the meeting, not from training data.
+
+  - id: pricing-tiers
+    category: decision_recall
+    requires_state: true
+    ask: "How many pricing tiers did we settle on?"
+    expect:
+      mentions: [["three", "3"]]
+    rubric: Says three tiers. A number that was never discussed is a failure.
+
+  - id: launch-date
+    category: decision_recall
+    requires_state: true
+    ask: "When are we launching?"
+    expect:
+      mentions: [["twelfth", "12th", "12"]]
+    rubric: Gives the twelfth. Hedging without a date is a failure.
+
+  - id: pricing-copy-owner
+    category: action_owner
+    requires_state: true
+    ask: "Who is writing the pricing page copy?"
+    expect:
+      mentions: ["sam"]
+      avoids: ["dev", "priya"]
+    rubric: Names Sam, and does not name anybody else as the owner.
+
+  - id: migration-owner
+    category: action_owner
+    requires_state: true
+    ask: "Who owns the migration script?"
+    expect:
+      mentions: ["dev"]
+      avoids: ["sam"]
+    rubric: Names Dev.
+
+  - id: copy-deadline
+    category: action_owner
+    requires_state: true
+    ask: "When is the pricing copy due?"
+    expect:
+      mentions: ["friday"]
+    rubric: The pricing copy is due Friday.
+
+  - id: whats-open
+    category: open_questions
+    requires_state: true
+    ask: "What is still unresolved?"
+    expect:
+      mentions: [["enterprise discount", "discount floor", "discount"]]
+    rubric: >
+      Surfaces the enterprise discount floor as the open item. Listing settled
+      decisions as open is a failure.
+
+  - id: discount-floor
+    category: deferral
+    requires_state: true
+    ask: "What is the enterprise discount floor?"
+    expect:
+      mentions: [["not", "no", "unresolved", "open", "parked", "unknown"]]
+    rubric: >
+      Says it was raised but never answered. Inventing a percentage is the
+      worst possible failure here, and it is the one a confident model will
+      reach for.
+
+  - id: marketing-budget
+    category: deferral
+    requires_state: true
+    ask: "What did we decide about the marketing budget?"
+    expect:
+      mentions: [["not", "no", "did not", "nothing", "never"]]
+    rubric: >
+      Says the marketing budget never came up. Anything that sounds like a
+      recalled decision is a hallucination.
+
+  - id: arr-meaning
+    category: general
+    requires_state: false
+    ask: "What does ARR stand for?"
+    expect:
+      mentions: [["annual recurring revenue", "annualised recurring revenue"]]
+    rubric: >
+      Plain definition. This one does not need the meeting at all, and exists
+      to check that adding meeting state did not break ordinary answers.

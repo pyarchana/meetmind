@@ -1,0 +1,112 @@
+id: security-audit
+title: Pre audit gap review
+
+transcript:
+  - speaker: hana
+    text: "The auditor flagged three gaps. Logging, key rotation, and access reviews."
+  - speaker: ravi
+    text: "Logging is nearly done. Key rotation has not started."
+  - speaker: hana
+    text: "Access reviews are the risky one, there is no process at all."
+  - speaker: ravi
+    text: "Can we buy something rather than build it?"
+  - speaker: hana
+    text: "For access reviews, yes. We buy. Building it is a quarter we do not have."
+  - speaker: ravi
+    text: "Agreed, buy for access reviews. Key rotation we build, it is small."
+  - speaker: hana
+    text: "Ravi, you scope key rotation this week."
+  - speaker: ravi
+    text: "Mine."
+  - speaker: hana
+    text: "When is the audit window exactly?"
+  - speaker: ravi
+    text: "Some time in November, I have not seen a date."
+
+questions:
+  - id: gaps-count
+    category: decision_recall
+    requires_state: true
+    ask: "How many gaps did the auditor flag?"
+    expect:
+      mentions: [["three", "3"]]
+    rubric: Three gaps were flagged.
+
+  - id: buy-or-build
+    category: decision_recall
+    requires_state: true
+    ask: "Are we building or buying access reviews?"
+    expect:
+      mentions: ["buy"]
+      avoids: ["build it ourselves"]
+    rubric: Buy, because building costs a quarter.
+
+  - id: key-rotation-decision
+    category: decision_recall
+    requires_state: true
+    ask: "What are we doing about key rotation?"
+    expect:
+      mentions: ["build"]
+    rubric: >
+      Build it, because it is small. This is the opposite call from access
+      reviews in the same meeting, so an answer of "buy" means the two got
+      merged.
+
+  - id: rotation-owner
+    category: action_owner
+    requires_state: true
+    ask: "Who is scoping key rotation?"
+    expect:
+      mentions: ["ravi"]
+      avoids: ["hana"]
+    rubric: Names Ravi.
+
+  - id: furthest-along
+    category: decision_recall
+    requires_state: true
+    ask: "Which gap is closest to done?"
+    expect:
+      mentions: ["logging"]
+    rubric: Logging is the closest to done.
+
+  - id: audit-date-open
+    category: open_questions
+    requires_state: true
+    ask: "What do we still not know?"
+    expect:
+      mentions: [["date", "window", "november", "when"]]
+    rubric: The exact audit date.
+
+  - id: audit-date
+    category: deferral
+    requires_state: true
+    ask: "What date is the audit?"
+    expect:
+      mentions: [["not", "no", "unknown", "november", "exact"]]
+    rubric: >
+      Only "some time in November" is known. A precise date is invented, and
+      November alone with a hedge is acceptable.
+
+  - id: auditor-name
+    category: deferral
+    requires_state: true
+    ask: "Which firm is doing the audit?"
+    expect:
+      mentions: [["not", "no", "did not", "nothing", "never"]]
+    rubric: The firm was never named.
+
+  - id: soc2-meaning
+    category: general
+    requires_state: false
+    ask: "What is SOC 2 in one sentence?"
+    expect:
+      mentions: [["control", "security", "audit", "report"]]
+    rubric: A plain correct definition is enough here.
+
+  - id: key-rotation-why
+    category: general
+    requires_state: false
+    ask: "Why rotate encryption keys at all?"
+    expect:
+      mentions: [["exposure", "leak", "compromis", "limit", "window"]]
+    rubric: A plain correct explanation is enough here.

@@ -1,0 +1,98 @@
+id: customer-escalation
+title: Escalation from a large account
+
+transcript:
+  - speaker: ines
+    text: "Northwind threatened to churn. Their exports have been timing out for a week."
+  - speaker: paul
+    text: "It is the report builder. Anything over fifty thousand rows dies."
+  - speaker: ines
+    text: "Can we cap it and paginate?"
+  - speaker: paul
+    text: "Pagination is the right fix but it is two weeks. We can raise the timeout today."
+  - speaker: ines
+    text: "Do both. Raise the timeout now, ship pagination after."
+  - speaker: paul
+    text: "Agreed. Timeout today, pagination in the next two weeks."
+  - speaker: ines
+    text: "I will call Northwind this afternoon and tell them."
+  - speaker: paul
+    text: "Are we offering them credit for the week?"
+  - speaker: ines
+    text: "That is above me, I need to ask the CFO."
+
+questions:
+  - id: escalation-fix
+    category: decision_recall
+    requires_state: true
+    ask: "What are we doing about the export timeouts?"
+    expect:
+      mentions: [["timeout", "pagination", "paginate"]]
+    rubric: >
+      Both halves: raise the timeout now, pagination after. Naming only one is
+      a partial answer and should be marked down by the judge.
+
+  - id: pagination-eta
+    category: decision_recall
+    requires_state: true
+    ask: "When does pagination ship?"
+    expect:
+      mentions: [["two week", "2 week"]]
+    rubric: Pagination ships in two weeks.
+
+  - id: row-threshold
+    category: decision_recall
+    requires_state: true
+    ask: "At what size do the exports fail?"
+    expect:
+      mentions: [["fifty thousand", "50000", "50,000", "50k"]]
+    rubric: Fifty thousand rows.
+
+  - id: call-owner
+    category: action_owner
+    requires_state: true
+    ask: "Who is calling the customer?"
+    expect:
+      mentions: ["ines"]
+      avoids: ["paul"]
+    rubric: Names Ines.
+
+  - id: credit-open
+    category: open_questions
+    requires_state: true
+    ask: "What needs a decision from someone outside the room?"
+    expect:
+      mentions: [["credit", "cfo"]]
+    rubric: Whether to give Northwind credit, which needs the CFO.
+
+  - id: credit-amount
+    category: deferral
+    requires_state: true
+    ask: "How much credit are we giving Northwind?"
+    expect:
+      mentions: [["not", "no", "unknown", "cfo", "ask", "above"]]
+    rubric: Not decided, it needs the CFO. A number is invented.
+
+  - id: contract-value
+    category: deferral
+    requires_state: true
+    ask: "How much is the Northwind contract worth?"
+    expect:
+      mentions: [["not", "no", "did not", "nothing", "never"]]
+    rubric: Contract value never came up.
+
+  - id: churn-meaning
+    category: general
+    requires_state: false
+    ask: "What is customer churn?"
+    expect:
+      mentions: [["leave", "leaving", "stop", "cancel", "lost"]]
+    rubric: A plain correct definition is enough here.
+
+  - id: pagination-meaning
+    category: general
+    requires_state: false
+    ask: "Why does pagination help a slow export?"
+    expect:
+      mentions: [["smaller", "chunk", "batch", "page", "less"]]
+    rubric: A plain correct explanation is enough here.

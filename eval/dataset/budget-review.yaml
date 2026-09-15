@@ -1,0 +1,112 @@
+id: budget-review
+title: Trimming the infrastructure bill
+
+transcript:
+  - speaker: will
+    text: "Infra is forty one thousand a month. Finance wants it under thirty five."
+  - speaker: zoe
+    text: "Half of that is the staging cluster running twenty four seven."
+  - speaker: will
+    text: "Does anyone use staging at night?"
+  - speaker: zoe
+    text: "No. We can scale it to zero outside working hours."
+  - speaker: will
+    text: "Do that. Staging sleeps outside nine to six."
+  - speaker: zoe
+    text: "Agreed. Zoe owns the schedule, done by the end of the month."
+  - speaker: will
+    text: "That gets us maybe four thousand. Where does the rest come from?"
+  - speaker: zoe
+    text: "Unclear. I would need to look at the data transfer line properly."
+  - speaker: will
+    text: "Leave it open, bring numbers next week."
+
+questions:
+  - id: current-spend
+    category: decision_recall
+    requires_state: true
+    ask: "What is the monthly infrastructure bill?"
+    expect:
+      mentions: [["forty one", "41"]]
+    rubric: The bill is forty one thousand a month.
+
+  - id: target-spend
+    category: decision_recall
+    requires_state: true
+    ask: "What is finance asking us to get to?"
+    expect:
+      mentions: [["thirty five", "35"]]
+    rubric: Under thirty five thousand.
+
+  - id: staging-decision
+    category: decision_recall
+    requires_state: true
+    ask: "What did we decide about staging?"
+    expect:
+      mentions: [["zero", "sleep", "scale", "off"]]
+    rubric: Scale it to zero outside working hours.
+
+  - id: staging-hours
+    category: decision_recall
+    requires_state: true
+    ask: "What hours does staging stay up?"
+    expect:
+      mentions: [["nine to six", "9 to 6", "working hours"]]
+    rubric: Staging stays up nine to six.
+
+  - id: schedule-owner
+    category: action_owner
+    requires_state: true
+    ask: "Who owns the staging schedule?"
+    expect:
+      mentions: ["zoe"]
+      avoids: ["will"]
+    rubric: Names Zoe.
+
+  - id: schedule-due
+    category: action_owner
+    requires_state: true
+    ask: "When is the staging schedule due?"
+    expect:
+      mentions: [["end of the month", "end of month"]]
+    rubric: The staging schedule is due end of the month.
+
+  - id: remaining-gap
+    category: open_questions
+    requires_state: true
+    ask: "What is unresolved about the budget?"
+    expect:
+      mentions: [["transfer", "rest", "gap", "where"]]
+    rubric: Where the remaining savings come from, probably data transfer.
+
+  - id: transfer-savings
+    category: deferral
+    requires_state: true
+    ask: "How much will we save on data transfer?"
+    expect:
+      mentions: [["not", "no", "unclear", "unknown", "look"]]
+    rubric: Unclear, Zoe has to look. A figure is invented.
+
+  - id: layoffs
+    category: deferral
+    requires_state: true
+    ask: "Are we cutting headcount to hit the number?"
+    expect:
+      mentions: [["not", "no", "did not", "nothing", "never"]]
+    rubric: Headcount never came up, and this is a question where inventing an answer does real harm.
+
+  - id: scale-to-zero
+    category: general
+    requires_state: false
+    ask: "What does scale to zero mean?"
+    expect:
+      mentions: [["no", "zero", "instance", "shut", "stop", "idle"]]
+    rubric: A plain correct definition is enough here.
+
+  - id: egress-cost
+    category: general
+    requires_state: false
+    ask: "Why is cloud data egress usually expensive?"
+    expect:
+      mentions: [["out", "egress", "leaving", "charge", "bandwidth"]]
+    rubric: A plain correct explanation is enough here.
