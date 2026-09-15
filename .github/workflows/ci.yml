@@ -31,6 +31,10 @@ jobs:
         working-directory: ${{ github.workspace }}/bench
         run: pytest . -v
 
+      - name: Run eval harness tests
+        working-directory: ${{ github.workspace }}/eval
+        run: pytest . -v
+
   web:
     runs-on: ubuntu-latest
     defaults:
