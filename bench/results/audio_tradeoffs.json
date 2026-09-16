@@ -1,0 +1,66 @@
+{
+  "encoding": {
+    "frame_samples": 4096,
+    "frame_ms": 256.0,
+    "raw_bytes": 8192,
+    "json_base64_bytes": 10953,
+    "binary_bytes": 8192,
+    "overhead_pct": 33.7,
+    "json_kb_per_sec": 41.8,
+    "binary_kb_per_sec": 31.2,
+    "encode_us": 67.6,
+    "decode_us": 27.5
+  },
+  "frame_sizes": [
+    {
+      "frame_samples": 1024,
+      "frame_ms": 64.0,
+      "frames_per_sec": 15.6,
+      "vad_floor_ms": 192.0,
+      "json_kb_per_sec": 42.1,
+      "envelope_bytes_per_sec": 453.1,
+      "encode_us_per_sec_audio": 330.4
+    },
+    {
+      "frame_samples": 2048,
+      "frame_ms": 128.0,
+      "frames_per_sec": 7.8,
+      "vad_floor_ms": 384.0,
+      "json_kb_per_sec": 41.9,
+      "envelope_bytes_per_sec": 226.6,
+      "encode_us_per_sec_audio": 283.7
+    },
+    {
+      "frame_samples": 4096,
+      "frame_ms": 256.0,
+      "frames_per_sec": 3.9,
+      "vad_floor_ms": 768.0,
+      "json_kb_per_sec": 41.8,
+      "envelope_bytes_per_sec": 113.3,
+      "encode_us_per_sec_audio": 270.6
+    },
+    {
+      "frame_samples": 8192,
+      "frame_ms": 512.0,
+      "frames_per_sec": 2.0,
+      "vad_floor_ms": 1536.0,
+      "json_kb_per_sec": 41.7,
+      "envelope_bytes_per_sec": 56.6,
+      "encode_us_per_sec_audio": 263.2
+    }
+  ],
+  "quantisation": {
+    "seconds": 2.0,
+    "bytes_16bit": 64000,
+    "bytes_8bit": 32000,
+    "bytes_saved_pct": 50.0,
+    "snr_db": 33.94,
+    "note": "SNR is measured on a synthetic speech shaped signal. The effect on transcription accuracy needs a real run and real speech."
+  },
+  "measured_on": {
+    "python": "3.11.9",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD",
+    "note": "Byte counts are properties of the encoding and hold anywhere. The microsecond figures are this machine and will move."
+  }
+}
