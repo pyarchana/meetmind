@@ -36,6 +36,7 @@ import base64
 import contextlib
 import json
 import math
+import random
 import statistics
 import time
 import uuid
@@ -134,7 +135,20 @@ def silence_frames(seconds):
     return [b"\x00" * (FRAME_SAMPLES * 2)] * count
 
 
-async def run_trial(base_url, mode, pcm, question, timeout):
+def lossy(outgoing, drop_pct, seed=0):
+    """
+    Decide which frames a bad network would swallow.
+
+    Seeded, because a packet loss experiment where every run drops a different
+    set of frames measures the seed rather than the loss rate. Yields
+    (frame, dropped) so the caller can report how many actually went.
+    """
+    rng = random.Random(seed)
+    for frame in outgoing:
+        yield frame, rng.random() * 100 < drop_pct
+
+
+async def run_trial(base_url, mode, pcm, question, timeout, drop_pct=0.0, seed=0):
     """One question, one answer. Returns the measured milliseconds."""
     url = f"{base_url}/ws/bench/{uuid.uuid4().hex[:10]}"
     result = {"first_audio_ms": None, "first_transcript_ms": None, "server_ms": None}
@@ -143,12 +157,30 @@ async def run_trial(base_url, mode, pcm, question, timeout):
         if mode == "text":
             await socket.send(json.dumps({"type": "text", "data": question}))
         else:
-            for frame in list(frames(pcm)) + silence_frames(TRAILING_SILENCE_SECONDS):
-                await socket.send(json.dumps({
-                    "type": "audio",
-                    "data": base64.b64encode(frame).decode(),
-                }))
-                await asyncio.sleep(FRAME_SECONDS)   # real time pace
+            outgoing = list(frames(pcm)) + silence_frames(TRAILING_SILENCE_SECONDS)
+            sent = dropped = 0
+            for frame, lose in lossy(outgoing, drop_pct, seed):
+                if lose:
+                    dropped += 1
+                else:
+                    try:
+                        await socket.send(json.dumps({
+                            "type": "audio",
+                            "data": base64.b64encode(frame).decode(),
+                        }))
+                    except websockets.ConnectionClosed:
+                        # The server decided we were done and hung up. Common
+                        # under heavy loss, since the gaps between surviving
+                        # frames start to look like the end of a turn. Stop
+                        # sending and read whatever already came back.
+                        break
+                    sent += 1
+                # Sleep either way. A dropped frame still occupies its slot in
+                # real time, and skipping the sleep would quietly speed the
+                # stream up in proportion to the loss rate.
+                await asyncio.sleep(FRAME_SECONDS)
+            result["frames_sent"] = sent
+            result["frames_dropped"] = dropped
 
         sent_at = time.perf_counter()
         deadline = sent_at + timeout
@@ -278,6 +310,10 @@ async def main():
     parser.add_argument("--question", default=DEFAULT_QUESTION)
     parser.add_argument("--runs", type=int, default=10)
     parser.add_argument("--timeout", type=float, default=20.0)
+    parser.add_argument("--drop-pct", type=float, default=0.0,
+                        help="audio mode: percentage of upstream frames to drop")
+    parser.add_argument("--seed", type=int, default=0,
+                        help="seed for the packet loss pattern")
     parser.add_argument("--speak-after", type=float, default=1.0,
                         help="interrupt mode: seconds to let the agent talk first")
     parser.add_argument("--out", type=Path, help="write the full result as JSON")
@@ -297,7 +333,8 @@ async def main():
                 args.url, pcm, args.question, args.timeout, args.speak_after
             )
         else:
-            trial = await run_trial(args.url, args.mode, pcm, args.question, args.timeout)
+            trial = await run_trial(args.url, args.mode, pcm, args.question,
+                                    args.timeout, args.drop_pct, args.seed)
         runs.append(trial)
 
         shown = trial["first_audio_ms"]

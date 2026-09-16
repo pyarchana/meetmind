@@ -202,3 +202,58 @@ class TestInterruptMode:
         summary = summarise(runs)
         assert summary["interrupt_ack_ms"]["p50"] == 240
         assert summary["interrupt_ack_ms"]["p95"] == 290
+
+
+class TestPacketLoss:
+    def test_zero_percent_drops_nothing(self):
+        from latency import lossy
+        outgoing = [b"x"] * 200
+        assert sum(1 for _, lost in lossy(outgoing, 0.0) if lost) == 0
+
+    def test_one_hundred_percent_drops_everything(self):
+        from latency import lossy
+        outgoing = [b"x"] * 200
+        assert all(lost for _, lost in lossy(outgoing, 100.0))
+
+    def test_the_rate_is_roughly_what_was_asked_for(self):
+        from latency import lossy
+        outgoing = [b"x"] * 4000
+        lost = sum(1 for _, dropped in lossy(outgoing, 20.0) if dropped)
+        assert 0.17 < lost / len(outgoing) < 0.23, lost / len(outgoing)
+
+    def test_the_same_seed_drops_the_same_frames(self):
+        """
+        Otherwise a loss experiment measures the seed, not the loss rate, and
+        two runs at 20 percent are not comparable.
+        """
+        from latency import lossy
+        outgoing = [bytes([i % 256]) for i in range(500)]
+        first = [lost for _, lost in lossy(outgoing, 30.0, seed=7)]
+        second = [lost for _, lost in lossy(outgoing, 30.0, seed=7)]
+        assert first == second
+
+    def test_a_different_seed_drops_a_different_set(self):
+        from latency import lossy
+        outgoing = [bytes([i % 256]) for i in range(500)]
+        first = [lost for _, lost in lossy(outgoing, 30.0, seed=1)]
+        second = [lost for _, lost in lossy(outgoing, 30.0, seed=2)]
+        assert first != second
+
+    def test_frames_pass_through_unchanged(self):
+        from latency import lossy
+        outgoing = [b"one", b"two", b"three"]
+        assert [frame for frame, _ in lossy(outgoing, 50.0)] == outgoing
+
+    @pytest.mark.asyncio
+    async def test_a_lossy_run_reports_what_it_dropped(self, tmp_path):
+        from latency import read_wav, run_trial
+
+        pcm = read_wav(_write_wav(tmp_path / "speech.wav", seconds=1.5))
+        # A generous quiet gap, because dropped frames stretch the spacing
+        # between the ones that survive.
+        async with serve(8795, delay=0.2, quiet_gap=1.5):
+            trial = await run_trial("ws://127.0.0.1:8795", "audio", pcm, "", 20.0,
+                                    drop_pct=50.0, seed=3)
+
+        assert trial["frames_dropped"] > 0
+        assert trial["frames_sent"] + trial["frames_dropped"] > 5
