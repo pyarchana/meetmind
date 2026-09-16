@@ -13,6 +13,7 @@ import pytest
 
 from latency import (
     FRAME_SAMPLES,
+    FRAME_SECONDS,
     SAMPLE_RATE,
     run_interrupt_trial,
     percentile,
@@ -86,8 +87,18 @@ class TestFraming:
         pcm = b"\x00" * (FRAME_SAMPLES * 2 * 3)
         assert len(list(frames(pcm))) == 3
 
-    def test_one_second_of_silence_is_about_four_frames(self):
-        assert len(silence_frames(1.0)) == 4
+    def test_silence_is_measured_in_seconds_not_frames(self):
+        # Derived from the frame size rather than hardcoded, so changing the
+        # buffer moves this with it instead of breaking it.
+        # The property that matters is the duration, not the count. Frame
+        # counts do not scale linearly with seconds, because 2.0 / 0.064 is
+        # 31.25 and rounds to 31 rather than to twice 16.
+        for seconds in (0.5, 1.0, 2.0, 3.0):
+            produced = len(silence_frames(seconds)) * FRAME_SECONDS
+            assert abs(produced - seconds) <= FRAME_SECONDS / 2, (seconds, produced)
+
+    def test_a_short_request_still_yields_a_frame(self):
+        assert len(silence_frames(0.001)) == 1
 
 
 class TestAgainstMockServer:

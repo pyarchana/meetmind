@@ -23,7 +23,7 @@ import time
 import websockets
 
 # How long without a message counts as the client having stopped. Audio
-# mode sends a frame every 256ms so this has to clear that, but it also
+# mode sends a frame every 64ms so this has to clear that, but it also
 # puts a floor on the delay the mock can simulate: anything shorter is
 # swallowed by the detection window.
 QUIET_GAP_SECONDS = 0.5

@@ -46,7 +46,7 @@ from pathlib import Path
 import websockets
 
 SAMPLE_RATE = 16000
-FRAME_SAMPLES = 4096                      # 256ms, same as the browser
+FRAME_SAMPLES = 1024                      # 64ms, same as the browser
 FRAME_SECONDS = FRAME_SAMPLES / SAMPLE_RATE
 TRAILING_SILENCE_SECONDS = 1.0
 DEFAULT_QUESTION = "In one sentence, what is the capital of France?"
