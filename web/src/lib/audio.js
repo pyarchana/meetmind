@@ -2,7 +2,15 @@
 export const OUTPUT_SAMPLE_RATE = 24000
 export const INPUT_SAMPLE_RATE = 16000
 
-const MIC_BUFFER_SIZE = 4096
+// 1024 samples is 64ms. Measured in bench/audio_tradeoffs.py: dropping from
+// 4096 takes the barge in floor from 768ms to 192ms for 0.3 KB/s and about
+// sixty extra microseconds of CPU per second of audio.
+//
+// The tradeoff is sensitivity. A transient now only has to survive
+// SPEECH_FRAMES * 64ms to cut the agent off, where it used to need four times
+// that. If real meetings produce false barge ins on coughs and door slams,
+// SPEECH_FRAMES is the dial, not this.
+const MIC_BUFFER_SIZE = 1024
 export const SPEECH_THRESHOLD = 0.012
 export const SPEECH_FRAMES = 3
 export const SILENCE_FRAMES = 25

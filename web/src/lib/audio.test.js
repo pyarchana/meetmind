@@ -28,8 +28,9 @@ describe('pcm conversion', () => {
   })
 
   it('encodes buffers too large to spread through fromCharCode', () => {
-    // 4096 samples is one mic frame, which overflows the argument limit
-    // when passed via String.fromCharCode.apply.
+    // Deliberately far larger than one 1024 sample frame. This is the size
+    // that overflows the argument limit when passed through
+    // String.fromCharCode.apply, which is the bug the loop encoder avoids.
     const frame = new Float32Array(4096).fill(0.1)
     expect(() => float32ToPcm16Base64(frame)).not.toThrow()
     expect(pcm16ToFloat32(float32ToPcm16Base64(frame))).toHaveLength(4096)
@@ -93,8 +94,8 @@ describe('barge in', () => {
   it('pins what that costs in milliseconds', () => {
     // Local barge in cannot beat this, whatever the network does. Change the
     // mic buffer size and this number moves with it.
-    expect(FRAME_MS).toBe(256)
-    expect(SPEECH_FRAMES * FRAME_MS).toBe(768)
-    expect(SILENCE_FRAMES * FRAME_MS).toBe(6400)
+    expect(FRAME_MS).toBe(64)
+    expect(SPEECH_FRAMES * FRAME_MS).toBe(192)
+    expect(SILENCE_FRAMES * FRAME_MS).toBe(1600)
   })
 })
