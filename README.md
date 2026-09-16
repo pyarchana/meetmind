@@ -232,9 +232,9 @@ web tests:
 
 | What | Cost |
 |---|---|
-| Mic frame size | 256 ms, so no client timing is finer than that |
-| Speech to playback cut | up to 768 ms, three frames of confirmation |
-| Silence to end of turn | 6400 ms, twenty five frames |
+| Mic frame size | 64 ms, so no client timing is finer than that |
+| Speech to playback cut | up to 192 ms, three frames of confirmation |
+| Silence to end of turn | 1600 ms, twenty five frames |
 
 Server round trip numbers need a run against a real key:
 
@@ -246,9 +246,10 @@ cd app && MEETMIND_TIMING=1 uvicorn main:app --port 8000
 python bench/latency.py --runs 20 --label "local, wifi" --out bench/results/local.json
 ```
 
-That 768 ms barge in figure is worth sitting with. On most networks it is
-larger than the server round trip, so it, not the model, is what makes an
-interruption feel slow.
+Those numbers are what the mic buffer was moved to 1024 samples for. It used
+to be 4096, which put barge in at 768 ms, longer than the whole server round
+trip on most networks, so the thing making interruptions feel slow was the
+client rather than the model.
 
 Measured offline, no key needed, in
 [bench/results/audio_tradeoffs.json](bench/results/audio_tradeoffs.json):
@@ -258,9 +259,10 @@ Measured offline, no key needed, in
 | 1024 samples | 192 ms | 42.1 KB/s | 330 us |
 | 4096 samples (today) | 768 ms | 41.8 KB/s | 271 us |
 
-Going to 1024 sample frames cuts the barge in floor four fold for 0.3 KB/s and
-sixty microseconds of CPU. That is the cheapest latency win available and it
-needs no server change at all.
+Going to 1024 sample frames cut the barge in floor four fold for 0.3 KB/s and
+sixty microseconds of CPU, with no server change. The cost is sensitivity: a
+transient now only needs 192 ms to trigger, so if false barge ins appear,
+SPEECH_FRAMES is the dial.
 
 Base64 over text frames costs 33.7 percent against binary, which is 10 KB/s on
 a 42 KB/s stream and 68 microseconds per frame. Real, but not worth a protocol

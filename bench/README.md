@@ -52,15 +52,15 @@ question plus a fixed tail of silence and then stops, which gives one well
 defined moment to measure from. It is not what a real client does, and that is
 the point.
 
-**256ms of quantisation.** The mic uses a 4096 sample buffer at 16kHz, so
-frames arrive every 256ms and no client side measurement is finer than that.
+**64ms of quantisation.** The mic uses a 1024 sample buffer at 16kHz, so
+frames arrive every 64ms and no client side measurement is finer than that.
 Report it as measurement error or shrink the buffer for the experiment and
 note what it costs in CPU.
 
 **Interrupt mode measures the server half only.** The browser cuts its own
 playback as soon as local VAD fires, which never touches the network. That
 half is fixed by the constants in `web/src/lib/audio.js` and pinned by the web
-tests: three frames of speech to trigger, so up to 768ms before playback stops.
+tests: three frames of speech to trigger, so up to 192ms before playback stops.
 On most networks that will dominate the server round trip, so measure both
 before optimising either.
 
@@ -75,7 +75,7 @@ than of Gemini, so they are measured offline and the results are committed in
 python bench/audio_tradeoffs.py --out bench/results/audio_tradeoffs.json
 ```
 
-### Encoding, at the current 256ms frame
+### Encoding, measured at a 256ms frame
 
 | | Per frame | Per second |
 |---|---|---|
@@ -93,15 +93,21 @@ it will not show up in any measurement a user can feel.
 
 | Samples | Frame | Barge in floor | Wire | CPU per second |
 |---|---|---|---|---|
-| 1024 | 64 ms | **192 ms** | 42.1 KB/s | 330 us |
+| 1024 (today) | 64 ms | **192 ms** | 42.1 KB/s | 330 us |
 | 2048 | 128 ms | 384 ms | 41.9 KB/s | 284 us |
-| 4096 (today) | 256 ms | 768 ms | 41.8 KB/s | 271 us |
+| 4096 (was) | 256 ms | 768 ms | 41.8 KB/s | 271 us |
 | 8192 | 512 ms | 1536 ms | 41.7 KB/s | 263 us |
 
-This is the finding worth acting on. Issue #1 pinned barge in at up to 768 ms,
-three frames of confirmation at 256 ms each, and showed it is probably larger
-than the server round trip. Dropping to 1024 sample frames takes that floor to
-192 ms.
+This was the finding worth acting on, and it has been applied. Issue #1
+pinned barge in at up to 768 ms, three frames of confirmation at 256 ms each,
+and showed it is probably larger than the server round trip. The mic now uses
+1024 sample frames, so that floor is 192 ms.
+
+What it costs is sensitivity. A transient only has to survive 192 ms to cut the
+agent off now, where it used to need 768 ms, so coughs and door slams are more
+likely to register as speech. If that shows up in real meetings, raise
+SPEECH_FRAMES rather than putting the buffer back: five frames gives a 320 ms
+window and still beats the old number by more than two to one.
 
 It costs 0.3 KB/s and about 60 extra microseconds of CPU per second of audio.
 For a four fold improvement in the slowest part of the interaction, that is
