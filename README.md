@@ -250,6 +250,22 @@ That 768 ms barge in figure is worth sitting with. On most networks it is
 larger than the server round trip, so it, not the model, is what makes an
 interruption feel slow.
 
+Measured offline, no key needed, in
+[bench/results/audio_tradeoffs.json](bench/results/audio_tradeoffs.json):
+
+| Frame size | Barge in floor | Wire | CPU per second |
+|---|---|---|---|
+| 1024 samples | 192 ms | 42.1 KB/s | 330 us |
+| 4096 samples (today) | 768 ms | 41.8 KB/s | 271 us |
+
+Going to 1024 sample frames cuts the barge in floor four fold for 0.3 KB/s and
+sixty microseconds of CPU. That is the cheapest latency win available and it
+needs no server change at all.
+
+Base64 over text frames costs 33.7 percent against binary, which is 10 KB/s on
+a 42 KB/s stream and 68 microseconds per frame. Real, but not worth a protocol
+change on its own.
+
 ## License
 
 MIT

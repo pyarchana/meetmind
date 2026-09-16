@@ -64,6 +64,84 @@ tests: three frames of speech to trigger, so up to 768ms before playback stops.
 On most networks that will dominate the server round trip, so measure both
 before optimising either.
 
+
+## Audio transport tradeoffs
+
+Answers issue #4. Byte counts and CPU are properties of the encoding rather
+than of Gemini, so they are measured offline and the results are committed in
+`results/audio_tradeoffs.json`.
+
+```bash
+python bench/audio_tradeoffs.py --out bench/results/audio_tradeoffs.json
+```
+
+### Encoding, at the current 256ms frame
+
+| | Per frame | Per second |
+|---|---|---|
+| JSON plus base64 (today) | 10953 B | 41.8 KB/s |
+| Binary websocket frame | 8192 B | 31.2 KB/s |
+
+Base64 costs 33.7 percent, and encoding costs 68 microseconds per 256ms frame.
+
+That is 0.03 percent of one core. I called this out as worth fixing in the
+original review and I was wrong about the size of it: it is 10 KB/s and
+rounding error on CPU. Switch to binary frames for tidiness if you like, but
+it will not show up in any measurement a user can feel.
+
+### Frame size
+
+| Samples | Frame | Barge in floor | Wire | CPU per second |
+|---|---|---|---|---|
+| 1024 | 64 ms | **192 ms** | 42.1 KB/s | 330 us |
+| 2048 | 128 ms | 384 ms | 41.9 KB/s | 284 us |
+| 4096 (today) | 256 ms | 768 ms | 41.8 KB/s | 271 us |
+| 8192 | 512 ms | 1536 ms | 41.7 KB/s | 263 us |
+
+This is the finding worth acting on. Issue #1 pinned barge in at up to 768 ms,
+three frames of confirmation at 256 ms each, and showed it is probably larger
+than the server round trip. Dropping to 1024 sample frames takes that floor to
+192 ms.
+
+It costs 0.3 KB/s and about 60 extra microseconds of CPU per second of audio.
+For a four fold improvement in the slowest part of the interaction, that is
+close to free.
+
+The wire cost barely moves because the payload is the same audio either way.
+Only the JSON envelope multiplies, and the envelope is tiny next to 8 KB of
+base64.
+
+### Quantisation
+
+Sixteen bit to eight bit halves the bytes and costs 33.9 dB SNR on a speech
+shaped signal.
+
+Two caveats. This is linear eight bit; u-law spends its levels where speech
+actually sits and does considerably better at the same depth. And SNR is not
+accuracy: whether Gemini transcribes any worse needs a real run, which is what
+`--drop-pct` and a live key are for.
+
+`to_8bit` rounds rather than truncating. Truncating is a shift and looks
+neater, but it biases every sample toward zero and costs about another 6 dB,
+which would have made eight bit look worse than it is. There is a test pinning
+that gap.
+
+### Packet loss
+
+`--drop-pct` drops a seeded percentage of upstream frames.
+
+```bash
+python bench/latency.py --mode audio --wav speech.wav --drop-pct 20 --runs 10
+```
+
+Seeded on purpose: without it, two runs at 20 percent drop different frames
+and are not comparable, so the experiment measures the seed. Dropped frames
+still occupy their slot in real time, otherwise the stream quietly speeds up
+in proportion to the loss rate.
+
+What this cannot tell you offline is the thing worth knowing, which is what
+loss does to transcription accuracy. That needs a live key.
+
 ## Checking the harness itself
 
 `mock_server.py` answers after a delay you choose, so the harness can be
