@@ -270,7 +270,7 @@ change on its own.
 
 ## License
 
-MIT
+[MIT](LICENSE)
 
 ---
 
