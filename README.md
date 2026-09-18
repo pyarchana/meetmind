@@ -33,9 +33,14 @@ MeetMind sits in a browser tab while you attend meetings. Whisper a question, ge
 - Live conversation transcript
 
 ---
-## Live demo: 
+## Live demo
 
-https://meetmind-671715875630.us-central1.run.app
+Currently offline. The original Cloud Run deployment is gone along with the
+free trial that paid for it, so that link was returning a 500 and has been
+removed rather than left to rot.
+
+Redeploy notes are in [huggingface/](huggingface/). The
+[screenshots](#screenshots) below show it running in the meantime.
 
 ## Screenshots
 
