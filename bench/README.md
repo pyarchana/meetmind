@@ -84,10 +84,9 @@ python bench/audio_tradeoffs.py --out bench/results/audio_tradeoffs.json
 
 Base64 costs 33.7 percent, and encoding costs 68 microseconds per 256ms frame.
 
-That is 0.03 percent of one core. I called this out as worth fixing in the
-original review and I was wrong about the size of it: it is 10 KB/s and
-rounding error on CPU. Switch to binary frames for tidiness if you like, but
-it will not show up in any measurement a user can feel.
+That is 0.03 percent of one core. Binary frames are tidier, but 10 KB/s and
+rounding error on CPU will not show up in any measurement a user can feel, so
+this is not worth a protocol change on its own.
 
 ### Frame size
 

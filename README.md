@@ -39,8 +39,7 @@ Currently offline. The original Cloud Run deployment is gone along with the
 free trial that paid for it, so that link was returning a 500 and has been
 removed rather than left to rot.
 
-Redeploy notes are in [huggingface/](huggingface/). The
-[screenshots](#screenshots) below show it running in the meantime.
+The [screenshots](#screenshots) below show it running.
 
 ## Screenshots
 
