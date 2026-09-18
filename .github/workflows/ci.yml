@@ -35,6 +35,10 @@ jobs:
         working-directory: ${{ github.workspace }}/eval
         run: pytest . -v
 
+      - name: Run wake word tests
+        working-directory: ${{ github.workspace }}/wakeword
+        run: pytest . -v
+
   web:
     runs-on: ubuntu-latest
     defaults:
